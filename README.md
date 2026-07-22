@@ -26,9 +26,11 @@ delivery time.
    against the standard UK postcode format *and* checked that it falls in a
    London postcode area (`E`, `EC`, `N`, `NW`, `SE`, `SW`, `W`, `WC`).
 5. **"Pay"** — a card form that is clearly labeled as fake. No payment is
-   ever processed and no details are transmitted, stored, or even read by
-   the app — the fields accept anything (or nothing), so testing the order
-   flow doesn't require typing a realistic-looking card number.
+   ever processed and no details are transmitted or stored anywhere. Real
+   format-checking code exists for this (see
+   [Payment validation](#payment-validation-currently-disabled) below) but is
+   currently switched off so the fields accept anything — handy while
+   testing the order flow.
 6. **Get an order confirmation** — assigns a random delivery driver (Bob,
    Kevin, Andrew, Maria, or Charlotte) and estimates a delivery time from a
    ~15 minute prep time plus travel time (via the haversine distance) from
@@ -52,9 +54,69 @@ delivery time.
   distance formula (the [haversine formula](https://en.wikipedia.org/wiki/Haversine_formula))
   still produces a plausible-looking distance and delivery estimate — it
   just isn't the postcode's real-world location.
-- **Payment is entirely fake.** No card details are sent anywhere, and
-  they're not validated either — the fields are purely visual, so filling
-  in the form to test an order takes as little typing as possible.
+- **Payment is entirely fake.** No card details are sent anywhere. Format
+  validation for them exists in the code but is deliberately disabled —
+  see below.
+
+## Payment validation (currently disabled)
+
+`logic.js` includes fully working, tested card-format validation — a real
+[Luhn checksum](https://en.wikipedia.org/wiki/Luhn_algorithm) on the card
+number, an expiry check that rejects dates already in the past, and a
+3-digit CVV check:
+
+```js
+export function isValidCardNumber(raw) {
+  const digits = String(raw).replace(/\s+/g, "");
+  if (!/^\d{13,19}$/.test(digits)) return false;
+  return luhnCheck(digits);
+}
+
+export function luhnCheck(digits) {
+  let sum = 0;
+  let shouldDouble = false;
+  for (let i = digits.length - 1; i >= 0; i--) {
+    let digit = parseInt(digits[i], 10);
+    if (shouldDouble) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+    shouldDouble = !shouldDouble;
+  }
+  return sum % 10 === 0;
+}
+
+export function isValidExpiry(raw, now = new Date()) {
+  const match = String(raw).trim().match(/^(0[1-9]|1[0-2])\/(\d{2})$/);
+  if (!match) return false;
+  const month = parseInt(match[1], 10);
+  const year = 2000 + parseInt(match[2], 10);
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  return year > currentYear || (year === currentYear && month >= currentMonth);
+}
+
+export function isValidCvv(raw) {
+  return /^\d{3}$/.test(String(raw).trim());
+}
+```
+
+It's **switched off** in `script.js`'s payment submit handler right now, on
+purpose — so trying out the order flow doesn't require typing a
+Luhn-valid card number every time. To turn it back on, import these four
+functions in `script.js` and check them before calling `completeOrder()`
+in the `payment-form` submit listener, e.g.:
+
+```js
+if (!isValidCardNumber(cardNumber.value)) return showError("Invalid card number");
+if (!isValidExpiry(cardExpiry.value)) return showError("Card has expired");
+if (!isValidCvv(cardCvv.value)) return showError("Invalid CVV");
+completeOrder();
+```
+
+The functions are still fully covered by `tests/test_logic.mjs`, so they
+stay verified even while dormant.
 
 ## Project structure
 
