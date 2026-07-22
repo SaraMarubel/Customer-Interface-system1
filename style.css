@@ -1,0 +1,247 @@
+:root {
+  --bg: #fffaf3;
+  --surface: #ffffff;
+  --text: #2b1c14;
+  --muted: #7a6a5f;
+  --border: #e8ddd0;
+  --primary: #c0392b;
+  --primary-dark: #962d22;
+  --accent: #2e7d4f;
+  --error: #b3261e;
+  --shadow: 0 2px 8px rgba(43, 28, 20, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1512;
+    --surface: #261e19;
+    --text: #f1e7dd;
+    --muted: #b5a89c;
+    --border: #3d312a;
+    --primary: #e8604d;
+    --primary-dark: #ff7a63;
+    --accent: #59c085;
+    --error: #ff8a80;
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.site-header {
+  text-align: center;
+  padding: 2.5rem 1rem 1.5rem;
+}
+
+.site-header h1 {
+  margin: 0;
+  font-size: 2.2rem;
+  color: var(--primary);
+}
+
+.tagline {
+  color: var(--muted);
+  margin: 0.4rem 0 0;
+}
+
+.wizard {
+  max-width: 640px;
+  margin: 0 auto 3rem;
+  padding: 0 1rem;
+}
+
+.step-indicator {
+  display: flex;
+  justify-content: space-between;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.step-indicator li {
+  flex: 1;
+  text-align: center;
+  padding-bottom: 0.5rem;
+  border-bottom: 3px solid var(--border);
+}
+
+.step-indicator li.active {
+  color: var(--primary);
+  border-color: var(--primary);
+  font-weight: 600;
+}
+
+.step-indicator li.done {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.step {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.75rem;
+  box-shadow: var(--shadow);
+}
+
+.step h2 {
+  margin-top: 0;
+}
+
+.pizza-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.pizza-card {
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 0.75rem;
+  text-align: center;
+  cursor: pointer;
+  background: var(--bg);
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+
+.pizza-card:hover {
+  transform: translateY(-2px);
+}
+
+.pizza-card.selected {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+}
+
+.pizza-card .emoji {
+  font-size: 1.8rem;
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin: 0 0 1.25rem;
+  padding: 1rem;
+}
+
+legend {
+  padding: 0 0.4rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.radio-option,
+.checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  cursor: pointer;
+}
+
+label {
+  display: block;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.hint {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+input[type="text"] {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1rem;
+}
+
+input[type="text"]:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.step-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+button {
+  padding: 0.65rem 1.4rem;
+  border-radius: 8px;
+  border: none;
+  background: var(--primary);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.field-error {
+  color: var(--error);
+  font-size: 0.9rem;
+  margin: -0.5rem 0 1rem;
+}
+
+.fake-notice {
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+}
+
+.confirmation p {
+  margin: 0.4rem 0;
+}
+
+.confirmation .highlight {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.site-footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+  padding: 1rem;
+}

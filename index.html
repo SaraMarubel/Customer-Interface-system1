@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marubel Pizza's</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1>🍕 Marubel Pizza's</h1>
+    <p class="tagline">Fresh from your local pizzeria, straight to your door.</p>
+  </header>
+
+  <main class="wizard" id="wizard">
+    <ol class="step-indicator" id="step-indicator">
+      <li data-step="1">Pizza</li>
+      <li data-step="2">Customize</li>
+      <li data-step="3">Your details</li>
+      <li data-step="4">Payment</li>
+      <li data-step="5">Confirmation</li>
+    </ol>
+
+    <!-- Step 1: pizza selection -->
+    <section class="step" id="step-1" data-step="1">
+      <h2>Choose your pizza</h2>
+      <div class="pizza-grid" id="pizza-grid"></div>
+      <div class="step-actions">
+        <button type="button" id="to-step-2" disabled>Next</button>
+      </div>
+    </section>
+
+    <!-- Step 2: customize (only shown for Custom pizza) -->
+    <section class="step" id="step-2" data-step="2" hidden>
+      <h2>Customize your pizza</h2>
+
+      <fieldset>
+        <legend>Sauce</legend>
+        <label class="radio-option">
+          <input type="radio" name="sauce" value="yes" checked />
+          Yes, tomato sauce please
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="sauce" value="no" />
+          No sauce
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Cheese</legend>
+        <div id="cheese-options"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Toppings (choose any)</legend>
+        <div id="topping-options"></div>
+      </fieldset>
+
+      <div class="step-actions">
+        <button type="button" class="secondary" id="back-to-step-1">Back</button>
+        <button type="button" id="to-step-3">Next</button>
+      </div>
+    </section>
+
+    <!-- Step 3: customer details -->
+    <section class="step" id="step-3" data-step="3" hidden>
+      <h2>Your details</h2>
+      <form id="details-form" novalidate>
+        <label>
+          Full name
+          <input type="text" id="customer-name" required />
+        </label>
+        <label>
+          Delivery address
+          <input type="text" id="customer-address" placeholder="Flat 2, 10 Example Street" required />
+        </label>
+        <label>
+          Postcode <span class="hint">(must be a London postcode)</span>
+          <input type="text" id="customer-postcode" placeholder="e.g. SE1 6NP" required />
+        </label>
+        <p class="field-error" id="details-error" hidden></p>
+        <div class="step-actions">
+          <button type="button" class="secondary" id="back-to-pizza">Back</button>
+          <button type="submit" id="to-step-4">Next</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Step 4: payment (fake) -->
+    <section class="step" id="step-4" data-step="4" hidden>
+      <h2>Payment</h2>
+      <p class="fake-notice">
+        ⚠️ This is a fake payment form for demonstration purposes only. No real
+        payment is processed and no card details are stored or sent anywhere.
+      </p>
+      <form id="payment-form" novalidate>
+        <label>
+          Card number
+          <input type="text" id="card-number" placeholder="4242 4242 4242 4242" inputmode="numeric" required />
+        </label>
+        <label>
+          Expiry (MM/YY)
+          <input type="text" id="card-expiry" placeholder="MM/YY" required />
+        </label>
+        <label>
+          CVV
+          <input type="text" id="card-cvv" placeholder="123" inputmode="numeric" required />
+        </label>
+        <p class="field-error" id="payment-error" hidden></p>
+        <div class="step-actions">
+          <button type="button" class="secondary" id="back-to-details">Back</button>
+          <button type="submit" id="place-order">Place order</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Step 5: confirmation -->
+    <section class="step" id="step-5" data-step="5" hidden>
+      <h2>🎉 Order confirmed!</h2>
+      <div class="confirmation" id="confirmation-content"></div>
+      <div class="step-actions">
+        <button type="button" id="start-over">Place another order</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Marubel Pizza's — a demo project. All store locations, drivers, and payment handling are fictional.</p>
+  </footer>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
