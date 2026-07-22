@@ -12,6 +12,7 @@ import {
   STORES,
   projectToMapFraction,
   MAP_BOUNDS,
+  LONDON_BOUNDS,
   THAMES_WAYPOINTS,
   isValidCardNumber,
   luhnCheck,
@@ -122,6 +123,26 @@ test("fakeGeocode is deterministic for the same postcode", () => {
   const a = fakeGeocode("SE1 6NP");
   const b = fakeGeocode("se1 6np");
   assert.deepEqual(a, b);
+});
+
+test("fakeGeocode uses a real location for known districts (SE1 near Elephant & Castle/Waterloo)", () => {
+  const location = fakeGeocode("SE1 6DX");
+  const elephantAndCastle = STORES.find((s) => s.name === "Elephant & Castle");
+  const distanceKm = haversineKm(location.lat, location.lon, elephantAndCastle.lat, elephantAndCastle.lon);
+  assert.ok(distanceKm < 3, `expected SE1 6DX within 3km of Elephant & Castle, got ${distanceKm}km`);
+});
+
+test("fakeGeocode keeps different postcodes in the same district close but not identical", () => {
+  const a = fakeGeocode("SE1 6DX");
+  const b = fakeGeocode("SE1 9RT");
+  assert.notDeepEqual(a, b);
+  assert.ok(haversineKm(a.lat, a.lon, b.lat, b.lon) < 2, "expected same-district jitter to stay within ~2km");
+});
+
+test("fakeGeocode falls back to the wide bounding box for districts not in the lookup table", () => {
+  const location = fakeGeocode("ZZ99 9ZZ");
+  assert.ok(location.lat >= LONDON_BOUNDS.minLat && location.lat <= LONDON_BOUNDS.maxLat);
+  assert.ok(location.lon >= LONDON_BOUNDS.minLon && location.lon <= LONDON_BOUNDS.maxLon);
 });
 
 test("haversineKm returns 0 for identical points", () => {

@@ -150,9 +150,85 @@ function hashString(str) {
   return Math.abs(hash);
 }
 
+// Approximate real centroids for common London postcode districts (the
+// outward code minus any trailing sector letter, e.g. "SE1", "NW9", "EC2").
+// This isn't a full geocoding database — a real one has ~2 million UK
+// postcodes — but covering the well-known districts means postcodes people
+// actually recognise (including our own branches' own SE1/NW1/NW5/NW9/EC2)
+// get a genuinely accurate location instead of a random one.
+const POSTCODE_DISTRICT_COORDINATES = {
+  EC1: { lat: 51.525, lon: -0.1015 },
+  EC2: { lat: 51.5186, lon: -0.0886 },
+  EC3: { lat: 51.5121, lon: -0.0797 },
+  EC4: { lat: 51.5138, lon: -0.1027 },
+  E1: { lat: 51.515, lon: -0.0722 },
+  E2: { lat: 51.5292, lon: -0.0553 },
+  E3: { lat: 51.5285, lon: -0.0246 },
+  E8: { lat: 51.5461, lon: -0.0554 },
+  E14: { lat: 51.505, lon: -0.0197 },
+  E17: { lat: 51.586, lon: -0.011 },
+  N1: { lat: 51.5362, lon: -0.1033 },
+  N4: { lat: 51.5701, lon: -0.1052 },
+  N7: { lat: 51.554, lon: -0.118 },
+  N16: { lat: 51.5605, lon: -0.0748 },
+  N22: { lat: 51.5977, lon: -0.1097 },
+  NW1: { lat: 51.539, lon: -0.1426 },
+  NW3: { lat: 51.5566, lon: -0.178 },
+  NW4: { lat: 51.5875, lon: -0.2274 },
+  NW5: { lat: 51.5507, lon: -0.1402 },
+  NW6: { lat: 51.5457, lon: -0.192 },
+  NW9: { lat: 51.5955, lon: -0.2494 },
+  NW10: { lat: 51.539, lon: -0.244 },
+  SE1: { lat: 51.4998, lon: -0.0994 },
+  SE5: { lat: 51.4744, lon: -0.0918 },
+  SE10: { lat: 51.4805, lon: 0.0025 },
+  SE11: { lat: 51.4913, lon: -0.109 },
+  SE15: { lat: 51.4739, lon: -0.0658 },
+  SE22: { lat: 51.4544, lon: -0.0714 },
+  SW1: { lat: 51.4975, lon: -0.1357 },
+  SW3: { lat: 51.4875, lon: -0.1687 },
+  SW4: { lat: 51.4633, lon: -0.1367 },
+  SW6: { lat: 51.4759, lon: -0.2019 },
+  SW11: { lat: 51.4649, lon: -0.1642 },
+  SW19: { lat: 51.4214, lon: -0.2064 },
+  W1: { lat: 51.5152, lon: -0.1417 },
+  W2: { lat: 51.5152, lon: -0.1755 },
+  W6: { lat: 51.4927, lon: -0.2339 },
+  W10: { lat: 51.5205, lon: -0.216 },
+  W12: { lat: 51.5074, lon: -0.232 },
+  WC1: { lat: 51.5246, lon: -0.1218 },
+  WC2: { lat: 51.5136, lon: -0.1231 },
+};
+
+// Small deterministic offset so postcodes sharing a district (e.g. every SE1
+// postcode) don't all land on the exact same point, while staying within
+// the same neighbourhood.
+const DISTRICT_JITTER_DEGREES = 0.006; // roughly +/- 650m
+
+function lookupPostcodeDistrict(normalizedPostcode) {
+  const outwardCode = normalizedPostcode.split(" ")[0];
+  const match = outwardCode.match(/^([A-Z]+)(\d+)/);
+  if (!match) return null;
+  return POSTCODE_DISTRICT_COORDINATES[`${match[1]}${match[2]}`] ?? null;
+}
+
 export function fakeGeocode(postcode) {
   const normalized = normalizePostcode(postcode);
   const hash = hashString(normalized);
+  const districtCoordinates = lookupPostcodeDistrict(normalized);
+
+  if (districtCoordinates) {
+    const latJitter = (((hash % 1009) / 1009) * 2 - 1) * DISTRICT_JITTER_DEGREES;
+    const lonJitter = ((Math.floor(hash / 1009) % 1009) / 1009) * 2 - 1;
+    return {
+      lat: districtCoordinates.lat + latJitter,
+      lon: districtCoordinates.lon + lonJitter * DISTRICT_JITTER_DEGREES,
+    };
+  }
+
+  // Fallback for districts not in the table above: a deterministic
+  // pseudo-location within Greater London (not the district's real
+  // position — see the README for why a full geocoding lookup isn't used).
   const latFraction = (hash % 10007) / 10007;
   const lonFraction = (Math.floor(hash / 10007) % 10007) / 10007;
   return {

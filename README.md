@@ -58,15 +58,18 @@ delivery time.
 - **Phone numbers are fake by design.** Each branch uses a number in the
   `020 7946 0xxx` block, which Ofcom reserves specifically for fictional use
   in dramas and demos, so none of them can ring a real phone.
-- **Distance/geocoding is simulated.** Turning a postcode into a map
-  coordinate normally requires an external geocoding API (e.g.
-  [postcodes.io](https://postcodes.io)), which this offline demo doesn't
-  call. Instead, [`logic.js`](logic.js)'s `fakeGeocode()` deterministically
-  derives a pseudo-location for a postcode within Greater London's bounding
-  box, so the same postcode always gets the same "location" and a real
-  distance formula (the [haversine formula](https://en.wikipedia.org/wiki/Haversine_formula))
-  still produces a plausible-looking distance and delivery estimate — it
-  just isn't the postcode's real-world location.
+- **Geocoding is simulated, but accurate for known districts.** Turning a
+  postcode into a map coordinate normally requires an external geocoding API
+  (e.g. [postcodes.io](https://postcodes.io)), which this offline demo can't
+  call. Instead, `fakeGeocode()` first checks the postcode's district (e.g.
+  "SE1", "NW9") against a built-in table of ~40 real London districts and
+  their actual approximate coordinates (with a small deterministic jitter so
+  postcodes sharing a district aren't all identical) — so recognisable
+  postcodes, including ones near our own branches, get a genuinely accurate
+  location and delivery estimate. Only postcodes in a district *outside*
+  that table fall back to a pseudo-random location within Greater London,
+  using the real [haversine formula](https://en.wikipedia.org/wiki/Haversine_formula)
+  for distance either way.
 - **Payment is entirely fake.** No card details are sent anywhere. Format
   validation for them exists in the code but is deliberately disabled —
   see below.
