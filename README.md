@@ -11,45 +11,46 @@ and get an order confirmation.
 
 ## What it does
 
-1. **Welcome** — a landing screen introducing Marubel Pizza's.
-2. **Choose a branch** — type a postcode into the "find your nearest branch"
-   box to auto-select the closest one, or pick one yourself from an original,
-   illustrated-poster-style map of Greater London (flat colours, a textured
-   street grid, tinted neighbourhoods, park blobs, bold trunk roads, and a
-   river ribbon) with a pin for each of the 7 branches, or from the plain
-   list underneath. Once a branch is selected, choose **Pickup** or
-   **Delivery** (the two big, primary actions) or **Contact support**, which
-   reveals that branch's phone number. Branches are named after, and placed
-   at, the station each sits next to: Elephant & Castle, Colindale, Kentish
-   Town, Waterloo, Brent Cross, Camden Town, Moorgate.
-3. **Choose your pizza(s)** — Margherita, Hawaiian, Pepperoni, Vegetarian,
+1. **Choose a branch** — the first thing you see, headed "Marubel Pizza's
+   (who knows how to make pizza best)". Type a postcode into the "find your
+   nearest branch" box to auto-select the closest one, or pick one yourself
+   from an original, illustrated-poster-style map of Greater London (flat
+   colours, a textured street grid, tinted neighbourhoods, park blobs, bold
+   trunk roads, and a river ribbon) with a pin for each of the 7 branches, or
+   from the plain list underneath. Once a branch is selected, choose
+   **Pickup** or **Delivery** (the two big, primary actions) or **Contact
+   support**, which reveals that branch's phone number — all three sit in one
+   centred row. Branches are named after, and placed at, the station each
+   sits next to: Elephant & Castle, Colindale, Kentish Town, Waterloo, Brent
+   Cross, Camden Town, Moorgate.
+2. **Choose your pizza(s)** — Margherita, Hawaiian, Pepperoni, Vegetarian,
    Chicken, or a **Custom** build (sauce yes/no, choice of cheese). Every
    pizza, preset or custom, shows a one-line description of what's on it and
    lets you uncheck any included ingredient or add extra toppings
    (+£1.99 each), in Small/Medium/Large sizes with their own prices. Set a
    quantity and add it to your order — then pick another pizza and repeat to
    order more than one type in the same order.
-4. **Add drinks (optional)** — Water, Sprite, or Coca-Cola, £2 each, with the
+3. **Add drinks (optional)** — Water, Sprite, or Coca-Cola, £2 each, with the
    same quantity-and-add mechanic as pizzas.
-5. **Enter your details** — always your name; if you chose delivery, also an
+4. **Enter your details** — always your name; if you chose delivery, also an
    address and postcode, validated against the standard UK postcode format
    *and* checked that it falls in a London postcode area (`E`, `EC`, `N`,
    `NW`, `SE`, `SW`, `W`, `WC`). Pickup orders skip the address entirely —
    just give your name at the counter.
-6. **Time estimate** — pickup orders are told it'll be ready in the standard
-   ~15 minute prep time; delivery orders get an estimate combining that prep
-   time with real travel time (via the haversine distance) from the branch to
-   the delivery postcode.
-7. **Receipt** — an itemised, scrollable, till-receipt-styled summary of
+5. **Receipt** — an itemised, scrollable, till-receipt-styled summary of
    every pizza and drink, the subtotal, the £2.99 delivery fee (or "FREE"
-   for pickup), and the total, with a "Continue to pay" button.
-8. **"Pay"** — a card form that is clearly labeled as fake. No payment is
+   for pickup), and the total. Just underneath it: a time estimate — the
+   standard ~15 minute prep time for pickup, or that prep time plus real
+   travel time (via the haversine distance) for delivery — shown here,
+   *before* payment, since you haven't paid yet. A "Continue to pay" button
+   follows.
+6. **"Pay"** — a card form that is clearly labeled as fake. No payment is
    ever processed and no details are transmitted or stored anywhere. Real
    format-checking code exists for this (see
    [Payment validation](#payment-validation-currently-disabled) below) but is
    currently switched off so the fields accept anything — handy while
    testing the order flow.
-9. **Confirmation** — for delivery, a random driver (Bob, Kevin, Andrew,
+7. **Confirmation** — for delivery, a random driver (Bob, Kevin, Andrew,
    Maria, or Charlotte) plus the delivery estimate; for pickup, a reminder of
    the branch, ready time, and the name to give at the counter. Either way,
    the total paid is shown again.
@@ -167,7 +168,7 @@ stay verified even while dormant.
 ## Project structure
 
 ```
-index.html    # page structure — the 9-step order wizard
+index.html    # page structure — the 7-step order wizard
 style.css      # styling
 logic.js        # pure logic: menu/pricing, validation, geocoding, distance, delivery estimate
 script.js        # DOM wiring — imports logic.js, drives the wizard and the pizza/drink cart

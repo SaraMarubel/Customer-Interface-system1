@@ -67,10 +67,7 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// --- Step 1: welcome -----------------------------------------------------
-document.getElementById("to-step-2").addEventListener("click", () => showStep(2));
-
-// --- Step 2: branch selection ---------------------------------------------
+// --- Step 1: branch selection ---------------------------------------------
 const branchMap = document.getElementById("branch-map");
 const branchList = document.getElementById("branch-list");
 const branchDetail = document.getElementById("branch-detail");
@@ -226,12 +223,12 @@ finderButton.addEventListener("click", () => {
 
 document.getElementById("branch-pickup-button").addEventListener("click", () => {
   order.fulfillment = "pickup";
-  showStep(3);
+  showStep(2);
 });
 
 document.getElementById("branch-delivery-button").addEventListener("click", () => {
   order.fulfillment = "delivery";
-  showStep(3);
+  showStep(2);
 });
 
 document.getElementById("branch-support-button").addEventListener("click", () => {
@@ -239,11 +236,11 @@ document.getElementById("branch-support-button").addEventListener("click", () =>
   branchSupportNumber.hidden = false;
 });
 
-// --- Step 3: pizza selection & cart -----------------------------------------
+// --- Step 2: pizza selection & cart -----------------------------------------
 const pizzaGrid = document.getElementById("pizza-grid");
 const pizzaConfigContainer = document.getElementById("pizza-config");
 const pizzaCartSummary = document.getElementById("pizza-cart-summary");
-const toStep4Button = document.getElementById("to-step-4");
+const continueToDrinksButton = document.getElementById("continue-to-drinks");
 let pizzaConfigState = null;
 
 PIZZAS.forEach((pizza) => {
@@ -351,7 +348,7 @@ function renderPizzaConfig() {
       </div>
     </div>
     <div class="item-total">Line total: <strong>${formatGBP(lineTotal)}</strong></div>
-    <div class="step-actions step-actions-center">
+    <div class="step-actions">
       <button type="button" id="add-pizza-to-order">Add to order — ${formatGBP(lineTotal)}</button>
     </div>
   `;
@@ -428,7 +425,7 @@ function addPizzaToCart() {
 }
 
 function renderPizzaCartSummary() {
-  toStep4Button.disabled = order.cart.pizzas.length === 0;
+  continueToDrinksButton.disabled = order.cart.pizzas.length === 0;
   if (!order.cart.pizzas.length) {
     pizzaCartSummary.innerHTML = "";
     return;
@@ -456,10 +453,10 @@ function renderPizzaCartSummary() {
   );
 }
 
-document.getElementById("back-to-branch").addEventListener("click", () => showStep(2));
-toStep4Button.addEventListener("click", () => showStep(4));
+document.getElementById("back-to-branch").addEventListener("click", () => showStep(1));
+continueToDrinksButton.addEventListener("click", () => showStep(3));
 
-// --- Step 4: drinks & cart ---------------------------------------------
+// --- Step 3: drinks & cart ---------------------------------------------
 const drinkGrid = document.getElementById("drink-grid");
 const drinkConfigContainer = document.getElementById("drink-config");
 const drinkCartSummary = document.getElementById("drink-cart-summary");
@@ -496,7 +493,7 @@ function renderDrinkConfig() {
       </div>
     </div>
     <div class="item-total">Line total: <strong>${formatGBP(lineTotal)}</strong></div>
-    <div class="step-actions step-actions-center">
+    <div class="step-actions">
       <button type="button" id="add-drink-to-order">Add to order — ${formatGBP(lineTotal)}</button>
     </div>
   `;
@@ -549,22 +546,21 @@ function renderDrinkCartSummary() {
   );
 }
 
-document.getElementById("back-to-pizza").addEventListener("click", () => showStep(3));
+document.getElementById("back-to-pizza").addEventListener("click", () => showStep(2));
+document.getElementById("continue-to-details").addEventListener("click", () => {
+  const isDelivery = order.fulfillment === "delivery";
+  deliveryFields.hidden = !isDelivery;
+  pickupNote.hidden = isDelivery;
+  showStep(4);
+});
 
-// --- Step 5: customer details --------------------------------------------
+// --- Step 4: customer details --------------------------------------------
 const detailsForm = document.getElementById("details-form");
 const detailsError = document.getElementById("details-error");
 const deliveryFields = document.getElementById("delivery-fields");
 const pickupNote = document.getElementById("pickup-note");
 
-document.getElementById("to-step-5").addEventListener("click", () => {
-  const isDelivery = order.fulfillment === "delivery";
-  deliveryFields.hidden = !isDelivery;
-  pickupNote.hidden = isDelivery;
-  showStep(5);
-});
-
-document.getElementById("back-to-drinks").addEventListener("click", () => showStep(4));
+document.getElementById("back-to-drinks").addEventListener("click", () => showStep(3));
 
 detailsForm.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -590,8 +586,8 @@ detailsForm.addEventListener("submit", (e) => {
     order.address = address;
   }
 
-  renderEstimateStep();
-  showStep(6);
+  renderReceiptStep();
+  showStep(5);
 });
 
 function showDetailsError(message) {
@@ -599,30 +595,20 @@ function showDetailsError(message) {
   detailsError.hidden = false;
 }
 
-// --- Step 6: time estimate --------------------------------------------------
-function renderEstimateStep() {
-  const heading = document.getElementById("estimate-heading");
+// --- Step 5: receipt (with the time estimate shown just underneath it) -----
+function renderEstimateNote() {
   const detail = document.getElementById("estimate-detail");
   if (order.fulfillment === "pickup") {
-    heading.textContent = "We're getting your pizza ready!";
-    detail.textContent = `Ready for pickup in approximately ${PREP_MINUTES} minutes at Marubel Pizza's, ${order.store.name}. Just give the name "${order.name}" at the counter.`;
+    detail.textContent = `🕒 Ready for pickup in approximately ${PREP_MINUTES} minutes at Marubel Pizza's, ${order.store.name}. Just give the name "${order.name}" at the counter.`;
   } else {
     const location = fakeGeocode(order.postcode);
     const distanceKm = haversineKm(location.lat, location.lon, order.store.lat, order.store.lon);
     order.deliveryMinutes = estimateDeliveryMinutes(distanceKm);
-    heading.textContent = "Your order is on its way!";
-    detail.textContent = `Estimated delivery time: approximately ${order.deliveryMinutes} minutes to ${order.address}, ${order.postcode}.`;
+    detail.textContent = `🛵 Estimated delivery time: approximately ${order.deliveryMinutes} minutes to ${order.address}, ${order.postcode}.`;
   }
 }
 
-document.getElementById("back-to-details").addEventListener("click", () => showStep(5));
-document.getElementById("to-step-7").addEventListener("click", () => {
-  renderReceipt();
-  showStep(7);
-});
-
-// --- Step 7: receipt ---------------------------------------------------
-function renderReceipt() {
+function renderReceiptStep() {
   const pizzaSubtotal = order.cart.pizzas.reduce((sum, i) => sum + i.lineTotal, 0);
   const drinksSubtotal = order.cart.drinks.reduce((sum, i) => sum + i.lineTotal, 0);
   const subtotal = pizzaSubtotal + drinksSubtotal;
@@ -671,21 +657,24 @@ function renderReceipt() {
     <div class="receipt-line receipt-total"><span>TOTAL</span><span>${formatGBP(order.total)}</span></div>
     <div class="receipt-footer">Thank you for choosing<br />Marubel Pizza's! 🍕</div>
   `;
+
+  renderEstimateNote();
 }
 
-document.getElementById("to-step-8").addEventListener("click", () => showStep(8));
+document.getElementById("back-to-details").addEventListener("click", () => showStep(4));
+document.getElementById("continue-to-payment").addEventListener("click", () => showStep(6));
 
-// --- Step 8: payment (fake) ------------------------------------------------
+// --- Step 6: payment (fake) ------------------------------------------------
 const paymentForm = document.getElementById("payment-form");
 
-document.getElementById("back-to-receipt").addEventListener("click", () => showStep(7));
+document.getElementById("back-to-receipt").addEventListener("click", () => showStep(5));
 
 paymentForm.addEventListener("submit", (e) => {
   e.preventDefault();
   completeOrder();
 });
 
-// --- Step 9: confirmation --------------------------------------------------
+// --- Step 7: confirmation --------------------------------------------------
 const confirmationContent = document.getElementById("confirmation-content");
 
 function completeOrder() {
@@ -709,7 +698,7 @@ function completeOrder() {
       <p>Have a great day! 🍕</p>
     `;
   }
-  showStep(9);
+  showStep(7);
 }
 
 // --- Start over --------------------------------------------------------

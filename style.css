@@ -118,19 +118,12 @@ body {
   margin-top: 0;
 }
 
-.step-hero {
-  text-align: center;
-}
-
-.step-hero p {
+.tagline-inline {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 400;
   color: var(--muted);
-  font-size: 1.05rem;
-  max-width: 40ch;
-  margin: 0 auto 1.5rem;
-}
-
-.step-actions-center {
-  justify-content: center;
+  margin-top: 0.2rem;
 }
 
 /* --- Postcode finder --- */
@@ -516,6 +509,16 @@ body {
   font-size: 0.85rem;
 }
 
+.estimate-note {
+  text-align: center;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
 fieldset {
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -569,7 +572,8 @@ input[type="text"]:focus {
 
 .step-actions {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 0.75rem;
   margin-top: 1rem;
 }
