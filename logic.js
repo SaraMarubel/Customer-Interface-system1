@@ -3,15 +3,17 @@
 // tests, with no build step or dependencies required.
 
 // Each pizzeria sits next to the named London Underground/rail station.
-// Coordinates are the real approximate station locations.
+// Coordinates are the real approximate station locations. Phone numbers use
+// the 020 7946 0xxx block, which Ofcom reserves specifically for fictional
+// use in dramas and demos, so these are guaranteed not to reach a real line.
 export const STORES = [
-  { name: "Elephant & Castle", lat: 51.4943, lon: -0.1 },
-  { name: "Colindale", lat: 51.5955, lon: -0.2494 },
-  { name: "Kentish Town", lat: 51.5507, lon: -0.1402 },
-  { name: "Waterloo", lat: 51.5031, lon: -0.1132 },
-  { name: "Brent Cross", lat: 51.5765, lon: -0.213 },
-  { name: "Camden Town", lat: 51.539, lon: -0.1426 },
-  { name: "Moorgate", lat: 51.5186, lon: -0.0886 },
+  { name: "Elephant & Castle", lat: 51.4943, lon: -0.1, phone: "020 7946 0101" },
+  { name: "Colindale", lat: 51.5955, lon: -0.2494, phone: "020 7946 0102" },
+  { name: "Kentish Town", lat: 51.5507, lon: -0.1402, phone: "020 7946 0103" },
+  { name: "Waterloo", lat: 51.5031, lon: -0.1132, phone: "020 7946 0104" },
+  { name: "Brent Cross", lat: 51.5765, lon: -0.213, phone: "020 7946 0105" },
+  { name: "Camden Town", lat: 51.539, lon: -0.1426, phone: "020 7946 0106" },
+  { name: "Moorgate", lat: 51.5186, lon: -0.0886, phone: "020 7946 0107" },
 ];
 
 export const DRIVERS = ["Bob", "Kevin", "Andrew", "Maria", "Charlotte"];
@@ -65,7 +67,17 @@ export function validateLondonPostcode(raw) {
 // accuracy isn't the point, so instead we deterministically derive a
 // pseudo-location for a postcode, constrained to Greater London's bounding
 // box. The same postcode always maps to the same point.
-const LONDON_BOUNDS = { minLat: 51.28, maxLat: 51.7, minLon: -0.51, maxLon: 0.2 };
+export const LONDON_BOUNDS = { minLat: 51.28, maxLat: 51.7, minLon: -0.51, maxLon: 0.2 };
+
+// Projects a lat/lon into a 0-1 x/y fraction of LONDON_BOUNDS, for placing a
+// pin on the stylised map. Not a real map projection — just a simple linear
+// scale, which is fine for a small bounding box like Greater London.
+export function projectToMapFraction(lat, lon) {
+  return {
+    xFraction: (lon - LONDON_BOUNDS.minLon) / (LONDON_BOUNDS.maxLon - LONDON_BOUNDS.minLon),
+    yFraction: (LONDON_BOUNDS.maxLat - lat) / (LONDON_BOUNDS.maxLat - LONDON_BOUNDS.minLat),
+  };
+}
 
 function hashString(str) {
   let hash = 0;
@@ -98,18 +110,6 @@ export function haversineKm(lat1, lon1, lat2, lon2) {
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return EARTH_RADIUS_KM * c;
-}
-
-export function nearestStore(postcode) {
-  const customerLocation = fakeGeocode(postcode);
-  let closest = null;
-  for (const store of STORES) {
-    const distanceKm = haversineKm(customerLocation.lat, customerLocation.lon, store.lat, store.lon);
-    if (!closest || distanceKm < closest.distanceKm) {
-      closest = { store, distanceKm };
-    }
-  }
-  return closest;
 }
 
 export function estimateDeliveryMinutes(distanceKm) {

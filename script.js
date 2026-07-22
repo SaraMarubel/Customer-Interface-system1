@@ -1,4 +1,5 @@
 import {
+  STORES,
   PIZZA_MENU,
   CHEESE_OPTIONS,
   TOPPING_OPTIONS,
@@ -6,9 +7,11 @@ import {
   isValidCardNumber,
   isValidExpiry,
   isValidCvv,
-  nearestStore,
+  fakeGeocode,
+  haversineKm,
   estimateDeliveryMinutes,
   assignDriver,
+  projectToMapFraction,
   PREP_MINUTES,
 } from "./logic.js";
 
@@ -22,6 +25,7 @@ const PIZZA_EMOJI = {
 };
 
 const order = {
+  store: null,
   pizza: null,
   sauce: "yes",
   cheese: null,
@@ -42,9 +46,80 @@ function showStep(stepNumber) {
   });
 }
 
-// --- Step 1: pizza selection -------------------------------------------
+// --- Step 1: welcome -----------------------------------------------------
+document.getElementById("to-step-2").addEventListener("click", () => showStep(2));
+
+// --- Step 2: branch selection ---------------------------------------------
+const branchMap = document.getElementById("branch-map");
+const branchList = document.getElementById("branch-list");
+const branchDetail = document.getElementById("branch-detail");
+const branchDetailName = document.getElementById("branch-detail-name");
+const branchSupportNumber = document.getElementById("branch-support-number");
+
+// A soft, stylised river Thames line — not a real map, just visual flavour.
+const RIVER_PATH =
+  "M 0 190 C 60 180, 90 210, 140 195 S 220 165, 260 185 S 340 210, 400 195";
+
+branchMap.innerHTML = `
+  <rect x="0" y="0" width="400" height="300" class="map-background" rx="16" />
+  <path d="${RIVER_PATH}" class="map-river" />
+`;
+
+const pinGroups = new Map();
+STORES.forEach((store) => {
+  const { xFraction, yFraction } = projectToMapFraction(store.lat, store.lon);
+  const x = xFraction * 400;
+  const y = yFraction * 300;
+
+  const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  group.setAttribute("class", "map-pin");
+  group.setAttribute("tabindex", "0");
+  group.setAttribute("role", "button");
+  group.setAttribute("aria-label", `Select ${store.name} branch`);
+  group.innerHTML = `
+    <circle cx="${x}" cy="${y}" r="9" />
+    <text x="${x}" y="${y + 22}" text-anchor="middle">${store.name}</text>
+  `;
+  group.addEventListener("click", () => selectBranch(store));
+  group.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") selectBranch(store);
+  });
+  branchMap.appendChild(group);
+  pinGroups.set(store.name, group);
+});
+
+STORES.forEach((store) => {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "branch-card";
+  button.textContent = store.name;
+  button.addEventListener("click", () => selectBranch(store));
+  branchList.appendChild(button);
+});
+
+function selectBranch(store) {
+  order.store = store;
+
+  pinGroups.forEach((group, name) => group.classList.toggle("selected", name === store.name));
+  Array.from(branchList.children).forEach((btn) => btn.classList.toggle("selected", btn.textContent === store.name));
+
+  branchDetailName.textContent = `${store.name} branch`;
+  branchSupportNumber.hidden = true;
+  branchDetail.hidden = false;
+}
+
+document.getElementById("branch-order-button").addEventListener("click", () => {
+  showStep(3);
+});
+
+document.getElementById("branch-support-button").addEventListener("click", () => {
+  branchSupportNumber.textContent = `📞 ${order.store.name} branch support: ${order.store.phone} (fake number, does not ring anywhere)`;
+  branchSupportNumber.hidden = false;
+});
+
+// --- Step 3: pizza selection -------------------------------------------
 const pizzaGrid = document.getElementById("pizza-grid");
-const toStep2Button = document.getElementById("to-step-2");
+const toStep4Button = document.getElementById("to-step-4");
 
 PIZZA_MENU.forEach((pizza) => {
   const card = document.createElement("div");
@@ -54,20 +129,22 @@ PIZZA_MENU.forEach((pizza) => {
   card.addEventListener("click", () => {
     order.pizza = pizza;
     Array.from(pizzaGrid.children).forEach((c) => c.classList.toggle("selected", c === card));
-    toStep2Button.disabled = false;
+    toStep4Button.disabled = false;
   });
   pizzaGrid.appendChild(card);
 });
 
-toStep2Button.addEventListener("click", () => {
+document.getElementById("back-to-branch").addEventListener("click", () => showStep(2));
+
+toStep4Button.addEventListener("click", () => {
   if (order.pizza === "Custom") {
-    showStep(2);
+    showStep(4);
   } else {
-    showStep(3);
+    showStep(5);
   }
 });
 
-// --- Step 2: customize (only for Custom pizza) --------------------------
+// --- Step 4: customize (only for Custom pizza) --------------------------
 const cheeseOptionsContainer = document.getElementById("cheese-options");
 const toppingOptionsContainer = document.getElementById("topping-options");
 
@@ -101,22 +178,22 @@ document.querySelectorAll('input[name="sauce"]').forEach((input) => {
   });
 });
 
-document.getElementById("back-to-step-1").addEventListener("click", () => showStep(1));
+document.getElementById("back-to-step-3").addEventListener("click", () => showStep(3));
 
-document.getElementById("to-step-3").addEventListener("click", () => {
+document.getElementById("to-step-5").addEventListener("click", () => {
   if (!order.cheese) {
     order.cheese = CHEESE_OPTIONS[0];
     cheeseOptionsContainer.querySelector("input").checked = true;
   }
-  showStep(3);
+  showStep(5);
 });
 
-// --- Step 3: customer details --------------------------------------------
+// --- Step 5: customer details --------------------------------------------
 const detailsForm = document.getElementById("details-form");
 const detailsError = document.getElementById("details-error");
 
 document.getElementById("back-to-pizza").addEventListener("click", () => {
-  showStep(order.pizza === "Custom" ? 2 : 1);
+  showStep(order.pizza === "Custom" ? 4 : 3);
 });
 
 detailsForm.addEventListener("submit", (e) => {
@@ -142,7 +219,7 @@ detailsForm.addEventListener("submit", (e) => {
 
   order.name = name;
   order.address = address;
-  showStep(4);
+  showStep(6);
 });
 
 function showDetailsError(message) {
@@ -150,11 +227,11 @@ function showDetailsError(message) {
   detailsError.hidden = false;
 }
 
-// --- Step 4: payment (fake) ------------------------------------------------
+// --- Step 6: payment (fake) ------------------------------------------------
 const paymentForm = document.getElementById("payment-form");
 const paymentError = document.getElementById("payment-error");
 
-document.getElementById("back-to-details").addEventListener("click", () => showStep(3));
+document.getElementById("back-to-details").addEventListener("click", () => showStep(5));
 
 paymentForm.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -182,11 +259,12 @@ function showPaymentError(message) {
   paymentError.hidden = false;
 }
 
-// --- Step 5: confirmation --------------------------------------------------
+// --- Step 7: confirmation --------------------------------------------------
 const confirmationContent = document.getElementById("confirmation-content");
 
 function completeOrder() {
-  const { store, distanceKm } = nearestStore(order.postcode);
+  const customerLocation = fakeGeocode(order.postcode);
+  const distanceKm = haversineKm(customerLocation.lat, customerLocation.lon, order.store.lat, order.store.lon);
   const totalMinutes = estimateDeliveryMinutes(distanceKm);
   const driver = assignDriver();
 
@@ -201,13 +279,13 @@ function completeOrder() {
     <p>Thanks, ${escapeHtml(order.name)} — your order is on its way!</p>
     <p><strong>Order:</strong> ${escapeHtml(pizzaDescription)}</p>
     <p><strong>Delivering to:</strong> ${escapeHtml(order.address)}, ${escapeHtml(order.postcode)}</p>
-    <p><strong>Nearest pizzeria:</strong> Marubel Pizza's, ${store.name}</p>
+    <p><strong>Ordering from:</strong> Marubel Pizza's, ${order.store.name}</p>
     <p><strong>Delivery driver:</strong> ${driver}</p>
     <p><strong>Prep time:</strong> roughly ${PREP_MINUTES} minutes</p>
     <p><strong>Estimated delivery time:</strong> <span class="highlight">~${totalMinutes} minutes</span></p>
     <p>Have a great day! 🍕</p>
   `;
-  showStep(5);
+  showStep(7);
 }
 
 function escapeHtml(str) {

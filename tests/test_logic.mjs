@@ -6,7 +6,6 @@ import {
   validateLondonPostcode,
   normalizePostcode,
   haversineKm,
-  nearestStore,
   fakeGeocode,
   estimateDeliveryMinutes,
   PREP_MINUTES,
@@ -15,6 +14,7 @@ import {
   isValidExpiry,
   isValidCvv,
   STORES,
+  projectToMapFraction,
 } from "../logic.js";
 
 let passed = 0;
@@ -58,6 +58,33 @@ test("validateLondonPostcode returns normalized postcode on success", () => {
   assert.equal(validateLondonPostcode("ec2m7ra"), "EC2M 7RA");
 });
 
+// --- Store data -------------------------------------------------------------
+test("every store has a fake 020 7946 phone number", () => {
+  for (const store of STORES) {
+    assert.match(store.phone, /^020 7946 0\d{3}$/);
+  }
+});
+
+test("every store has a unique phone number", () => {
+  const numbers = STORES.map((s) => s.phone);
+  assert.equal(new Set(numbers).size, numbers.length);
+});
+
+// --- Map projection ---------------------------------------------------------
+test("projectToMapFraction keeps London coordinates within 0-1", () => {
+  for (const store of STORES) {
+    const { xFraction, yFraction } = projectToMapFraction(store.lat, store.lon);
+    assert.ok(xFraction >= 0 && xFraction <= 1, `x out of range: ${xFraction}`);
+    assert.ok(yFraction >= 0 && yFraction <= 1, `y out of range: ${yFraction}`);
+  }
+});
+
+test("projectToMapFraction places higher latitude further up (smaller y)", () => {
+  const north = projectToMapFraction(51.65, -0.1);
+  const south = projectToMapFraction(51.35, -0.1);
+  assert.ok(north.yFraction < south.yFraction);
+});
+
 // --- Geocoding & distance -------------------------------------------------
 test("fakeGeocode is deterministic for the same postcode", () => {
   const a = fakeGeocode("SE1 6NP");
@@ -73,13 +100,6 @@ test("haversineKm returns a sensible distance between two known London points", 
   // Waterloo to Moorgate is roughly 3-4 km as the crow flies.
   const distance = haversineKm(51.5031, -0.1132, 51.5186, -0.0886);
   assert.ok(distance > 1 && distance < 6, `expected ~1-6km, got ${distance}`);
-});
-
-test("nearestStore always returns one of the known stores", () => {
-  const result = nearestStore("SE1 6NP");
-  const names = STORES.map((s) => s.name);
-  assert.ok(names.includes(result.store.name));
-  assert.ok(result.distanceKm >= 0);
 });
 
 // --- Delivery estimate -----------------------------------------------------

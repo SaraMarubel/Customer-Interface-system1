@@ -62,16 +62,18 @@ body {
 
 .step-indicator {
   display: flex;
-  justify-content: space-between;
+  gap: 1rem;
   list-style: none;
-  padding: 0;
+  padding: 0 0 0.35rem;
   margin: 0 0 2rem;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--muted);
+  overflow-x: auto;
 }
 
 .step-indicator li {
-  flex: 1;
+  flex: 0 0 auto;
+  white-space: nowrap;
   text-align: center;
   padding-bottom: 0.5rem;
   border-bottom: 3px solid var(--border);
@@ -98,6 +100,133 @@ body {
 
 .step h2 {
   margin-top: 0;
+}
+
+.step-hero {
+  text-align: center;
+}
+
+.step-hero p {
+  color: var(--muted);
+  font-size: 1.05rem;
+  max-width: 40ch;
+  margin: 0 auto 1.5rem;
+}
+
+.step-actions-center {
+  justify-content: center;
+}
+
+/* --- Branch map --- */
+
+.map-container {
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+#branch-map {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.map-background {
+  fill: color-mix(in srgb, var(--accent) 12%, var(--bg));
+}
+
+.map-river {
+  fill: none;
+  stroke: color-mix(in srgb, var(--primary) 25%, var(--accent));
+  stroke-width: 6;
+  stroke-linecap: round;
+  opacity: 0.5;
+}
+
+.map-pin {
+  cursor: pointer;
+}
+
+.map-pin circle {
+  fill: var(--primary);
+  stroke: var(--surface);
+  stroke-width: 2;
+  transition: r 0.1s ease;
+}
+
+.map-pin:hover circle,
+.map-pin:focus circle {
+  r: 11;
+}
+
+.map-pin.selected circle {
+  fill: var(--accent);
+}
+
+.map-pin text {
+  font-size: 11px;
+  fill: var(--text);
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+.map-pin:hover text,
+.map-pin:focus text,
+.map-pin.selected text {
+  opacity: 1;
+}
+
+.branch-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.branch-card {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.branch-card:hover {
+  border-color: var(--primary);
+}
+
+.branch-card.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface));
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.branch-detail {
+  border-top: 1px solid var(--border);
+  padding-top: 1.25rem;
+  text-align: center;
+}
+
+.branch-detail h3 {
+  margin-top: 0;
+}
+
+.primary-cta {
+  padding: 1rem 2.2rem;
+  font-size: 1.15rem;
+}
+
+.support-number {
+  margin-top: 1rem;
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .pizza-grid {

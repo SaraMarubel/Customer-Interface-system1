@@ -14,24 +14,55 @@
 
   <main class="wizard" id="wizard">
     <ol class="step-indicator" id="step-indicator">
-      <li data-step="1">Pizza</li>
-      <li data-step="2">Customize</li>
-      <li data-step="3">Your details</li>
-      <li data-step="4">Payment</li>
-      <li data-step="5">Confirmation</li>
+      <li data-step="1">Welcome</li>
+      <li data-step="2">Branch</li>
+      <li data-step="3">Pizza</li>
+      <li data-step="4">Customize</li>
+      <li data-step="5">Your details</li>
+      <li data-step="6">Payment</li>
+      <li data-step="7">Confirmation</li>
     </ol>
 
-    <!-- Step 1: pizza selection -->
-    <section class="step" id="step-1" data-step="1">
-      <h2>Choose your pizza</h2>
-      <div class="pizza-grid" id="pizza-grid"></div>
-      <div class="step-actions">
-        <button type="button" id="to-step-2" disabled>Next</button>
+    <!-- Step 1: welcome -->
+    <section class="step step-hero" id="step-1" data-step="1">
+      <h2>Welcome to Marubel Pizza's 🍕</h2>
+      <p>London's favourite (fictional) pizzeria — pick your nearest branch and order in a couple of minutes.</p>
+      <div class="step-actions step-actions-center">
+        <button type="button" id="to-step-2">Get started</button>
       </div>
     </section>
 
-    <!-- Step 2: customize (only shown for Custom pizza) -->
+    <!-- Step 2: branch selection -->
     <section class="step" id="step-2" data-step="2" hidden>
+      <h2>Choose a branch</h2>
+      <p class="hint">Each of our 7 London branches sits right next to the station it's named after.</p>
+      <div class="map-container">
+        <svg id="branch-map" viewBox="0 0 400 300" role="img" aria-label="Stylised map of Greater London with a pin for each Marubel Pizza's branch"></svg>
+      </div>
+      <div class="branch-list" id="branch-list"></div>
+
+      <div class="branch-detail" id="branch-detail" hidden>
+        <h3 id="branch-detail-name"></h3>
+        <div class="step-actions step-actions-center">
+          <button type="button" id="branch-order-button" class="primary-cta">Place an order</button>
+          <button type="button" class="secondary" id="branch-support-button">Contact support</button>
+        </div>
+        <p class="support-number" id="branch-support-number" hidden></p>
+      </div>
+    </section>
+
+    <!-- Step 3: pizza selection -->
+    <section class="step" id="step-3" data-step="3" hidden>
+      <h2>Choose your pizza</h2>
+      <div class="pizza-grid" id="pizza-grid"></div>
+      <div class="step-actions">
+        <button type="button" class="secondary" id="back-to-branch">Back</button>
+        <button type="button" id="to-step-4" disabled>Next</button>
+      </div>
+    </section>
+
+    <!-- Step 4: customize (only shown for Custom pizza) -->
+    <section class="step" id="step-4" data-step="4" hidden>
       <h2>Customize your pizza</h2>
 
       <fieldset>
@@ -57,13 +88,13 @@
       </fieldset>
 
       <div class="step-actions">
-        <button type="button" class="secondary" id="back-to-step-1">Back</button>
-        <button type="button" id="to-step-3">Next</button>
+        <button type="button" class="secondary" id="back-to-step-3">Back</button>
+        <button type="button" id="to-step-5">Next</button>
       </div>
     </section>
 
-    <!-- Step 3: customer details -->
-    <section class="step" id="step-3" data-step="3" hidden>
+    <!-- Step 5: customer details -->
+    <section class="step" id="step-5" data-step="5" hidden>
       <h2>Your details</h2>
       <form id="details-form" novalidate>
         <label>
@@ -81,13 +112,13 @@
         <p class="field-error" id="details-error" hidden></p>
         <div class="step-actions">
           <button type="button" class="secondary" id="back-to-pizza">Back</button>
-          <button type="submit" id="to-step-4">Next</button>
+          <button type="submit" id="to-step-6">Next</button>
         </div>
       </form>
     </section>
 
-    <!-- Step 4: payment (fake) -->
-    <section class="step" id="step-4" data-step="4" hidden>
+    <!-- Step 6: payment (fake) -->
+    <section class="step" id="step-6" data-step="6" hidden>
       <h2>Payment</h2>
       <p class="fake-notice">
         ⚠️ This is a fake payment form for demonstration purposes only. No real
@@ -114,8 +145,8 @@
       </form>
     </section>
 
-    <!-- Step 5: confirmation -->
-    <section class="step" id="step-5" data-step="5" hidden>
+    <!-- Step 7: confirmation -->
+    <section class="step" id="step-7" data-step="7" hidden>
       <h2>🎉 Order confirmed!</h2>
       <div class="confirmation" id="confirmation-content"></div>
       <div class="step-actions">
