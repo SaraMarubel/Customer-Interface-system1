@@ -26,10 +26,9 @@ delivery time.
    against the standard UK postcode format *and* checked that it falls in a
    London postcode area (`E`, `EC`, `N`, `NW`, `SE`, `SW`, `W`, `WC`).
 5. **"Pay"** — a card form that is clearly labeled as fake. No payment is
-   ever processed and no details are transmitted or stored anywhere; the
-   digits are only checked for a plausible format (length, a valid
-   [Luhn checksum](https://en.wikipedia.org/wiki/Luhn_algorithm), a real
-   expiry format that hasn't passed, and a 3-digit CVV).
+   ever processed and no details are transmitted, stored, or even read by
+   the app — the fields accept anything (or nothing), so testing the order
+   flow doesn't require typing a realistic-looking card number.
 6. **Get an order confirmation** — assigns a random delivery driver (Bob,
    Kevin, Andrew, Maria, or Charlotte) and estimates a delivery time from a
    ~15 minute prep time plus travel time (via the haversine distance) from
@@ -53,13 +52,14 @@ delivery time.
   distance formula (the [haversine formula](https://en.wikipedia.org/wiki/Haversine_formula))
   still produces a plausible-looking distance and delivery estimate — it
   just isn't the postcode's real-world location.
-- **Payment is entirely fake.** No card details are sent anywhere; only
-  their format is validated client-side.
+- **Payment is entirely fake.** No card details are sent anywhere, and
+  they're not validated either — the fields are purely visual, so filling
+  in the form to test an order takes as little typing as possible.
 
 ## Project structure
 
 ```
-index.html    # page structure — the 5-step order wizard
+index.html    # page structure — the 7-step order wizard
 style.css      # styling
 logic.js        # pure logic: validation, geocoding, distance, delivery estimate
 script.js        # DOM wiring — imports logic.js, drives the wizard

@@ -9,10 +9,6 @@ import {
   fakeGeocode,
   estimateDeliveryMinutes,
   PREP_MINUTES,
-  isValidCardNumber,
-  luhnCheck,
-  isValidExpiry,
-  isValidCvv,
   STORES,
   projectToMapFraction,
 } from "../logic.js";
@@ -109,45 +105,6 @@ test("estimateDeliveryMinutes includes prep time as a floor", () => {
 
 test("estimateDeliveryMinutes grows with distance", () => {
   assert.ok(estimateDeliveryMinutes(10) > estimateDeliveryMinutes(1));
-});
-
-// --- Card validation (fake) -------------------------------------------------
-test("luhnCheck accepts a known-valid test card number", () => {
-  assert.equal(luhnCheck("4242424242424242"), true); // standard Stripe test card
-});
-
-test("luhnCheck rejects a number with a bad check digit", () => {
-  assert.equal(luhnCheck("4242424242424241"), false);
-});
-
-test("isValidCardNumber rejects non-numeric input", () => {
-  assert.equal(isValidCardNumber("4242-4242-4242-4242abc"), false);
-});
-
-test("isValidCardNumber rejects too-short numbers", () => {
-  assert.equal(isValidCardNumber("4242"), false);
-});
-
-test("isValidExpiry accepts a date that hasn't expired yet", () => {
-  const now = new Date(2026, 5, 1); // June 2026
-  assert.equal(isValidExpiry("01/30", now), true); // Jan 2030 is in the future
-  assert.equal(isValidExpiry("06/26", now), true); // expires this same month is still valid
-});
-
-test("isValidExpiry rejects an expired date", () => {
-  const now = new Date(2026, 5, 1); // June 2026
-  assert.equal(isValidExpiry("01/25", now), false);
-});
-
-test("isValidExpiry rejects malformed input", () => {
-  assert.equal(isValidExpiry("13/25"), false);
-  assert.equal(isValidExpiry("1/25"), false);
-});
-
-test("isValidCvv accepts exactly 3 digits", () => {
-  assert.equal(isValidCvv("123"), true);
-  assert.equal(isValidCvv("12"), false);
-  assert.equal(isValidCvv("1234"), false);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

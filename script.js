@@ -4,9 +4,6 @@ import {
   CHEESE_OPTIONS,
   TOPPING_OPTIONS,
   validateLondonPostcode,
-  isValidCardNumber,
-  isValidExpiry,
-  isValidCvv,
   fakeGeocode,
   haversineKm,
   estimateDeliveryMinutes,
@@ -229,35 +226,13 @@ function showDetailsError(message) {
 
 // --- Step 6: payment (fake) ------------------------------------------------
 const paymentForm = document.getElementById("payment-form");
-const paymentError = document.getElementById("payment-error");
 
 document.getElementById("back-to-details").addEventListener("click", () => showStep(5));
 
 paymentForm.addEventListener("submit", (e) => {
   e.preventDefault();
-  paymentError.hidden = true;
-
-  const cardNumber = document.getElementById("card-number").value;
-  const cardExpiry = document.getElementById("card-expiry").value;
-  const cardCvv = document.getElementById("card-cvv").value;
-
-  if (!isValidCardNumber(cardNumber)) {
-    return showPaymentError("That card number doesn't look valid (check the digits).");
-  }
-  if (!isValidExpiry(cardExpiry)) {
-    return showPaymentError("Enter a valid, non-expired expiry date as MM/YY.");
-  }
-  if (!isValidCvv(cardCvv)) {
-    return showPaymentError("CVV must be exactly 3 digits.");
-  }
-
   completeOrder();
 });
-
-function showPaymentError(message) {
-  paymentError.textContent = message;
-  paymentError.hidden = false;
-}
 
 // --- Step 7: confirmation --------------------------------------------------
 const confirmationContent = document.getElementById("confirmation-content");

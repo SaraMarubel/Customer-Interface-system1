@@ -121,41 +121,6 @@ export function assignDriver() {
   return DRIVERS[Math.floor(Math.random() * DRIVERS.length)];
 }
 
-// --- Card validation (FAKE — no real payment is ever processed) -----------
-
-export function isValidCardNumber(raw) {
-  const digits = String(raw).replace(/\s+/g, "");
-  if (!/^\d{13,19}$/.test(digits)) return false;
-  return luhnCheck(digits);
-}
-
-export function luhnCheck(digits) {
-  let sum = 0;
-  let shouldDouble = false;
-  for (let i = digits.length - 1; i >= 0; i--) {
-    let digit = parseInt(digits[i], 10);
-    if (shouldDouble) {
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-    sum += digit;
-    shouldDouble = !shouldDouble;
-  }
-  return sum % 10 === 0;
-}
-
-export function isValidExpiry(raw, now = new Date()) {
-  const match = String(raw)
-    .trim()
-    .match(/^(0[1-9]|1[0-2])\/(\d{2})$/);
-  if (!match) return false;
-  const month = parseInt(match[1], 10);
-  const year = 2000 + parseInt(match[2], 10);
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
-  return year > currentYear || (year === currentYear && month >= currentMonth);
-}
-
-export function isValidCvv(raw) {
-  return /^\d{3}$/.test(String(raw).trim());
-}
+// Payment is entirely fake: the card/expiry/CVV fields exist for visual
+// realism only and are never validated or read, so testing the order flow
+// doesn't require typing anything that looks like a real card.

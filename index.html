@@ -122,22 +122,22 @@
       <h2>Payment</h2>
       <p class="fake-notice">
         ⚠️ This is a fake payment form for demonstration purposes only. No real
-        payment is processed and no card details are stored or sent anywhere.
+        payment is processed, no card details are stored or sent anywhere, and
+        anything you type here is accepted (no format checks).
       </p>
       <form id="payment-form" novalidate>
         <label>
           Card number
-          <input type="text" id="card-number" placeholder="4242 4242 4242 4242" inputmode="numeric" required />
+          <input type="text" id="card-number" placeholder="4242 4242 4242 4242" inputmode="numeric" />
         </label>
         <label>
           Expiry (MM/YY)
-          <input type="text" id="card-expiry" placeholder="MM/YY" required />
+          <input type="text" id="card-expiry" placeholder="MM/YY" />
         </label>
         <label>
           CVV
-          <input type="text" id="card-cvv" placeholder="123" inputmode="numeric" required />
+          <input type="text" id="card-cvv" placeholder="123" inputmode="numeric" />
         </label>
-        <p class="field-error" id="payment-error" hidden></p>
         <div class="step-actions">
           <button type="button" class="secondary" id="back-to-details">Back</button>
           <button type="submit" id="place-order">Place order</button>
