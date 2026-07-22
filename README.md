@@ -41,12 +41,20 @@ delivery time.
 
 ## Important: what's real and what's simulated
 
-- **Store locations** are real approximate coordinates for those 7 stations,
-  and the branch-picker map places each pin by projecting those coordinates
-  onto Greater London's bounding box (`projectToMapFraction()`). The map
-  itself is original decorative artwork drawn in `script.js` (streets, zones,
-  parks, river) in a flat-colour illustrated-map style — not a real map tile
-  or map API, since this is an offline, dependency-free static site.
+- **Store locations are real, and the map is genuinely to scale.** The
+  branch-picker map isn't zoomed out to all of Greater London — `MAP_BOUNDS`
+  is computed directly from the 7 stores' coordinates (with padding), and
+  corrected for the fact that a degree of longitude covers less real
+  distance than a degree of latitude at London's latitude, so relative
+  positions and distances between branches are proportionally accurate, not
+  stretched or squashed. The river Thames is plotted from `THAMES_WAYPOINTS`
+  — real coordinates for 10 real bridges (Kew Bridge to Tower Bridge) — using
+  the same projection as the pins, so it runs through its true position and
+  shape: Waterloo and Elephant & Castle sit right by it, while Colindale and
+  Brent Cross are correctly several kilometres north of it. The streets,
+  neighbourhood tints, parks, and roads around all of that are original
+  decorative artwork, not geographically real — there's no actual map tile
+  or map API involved, since this is an offline, dependency-free static site.
 - **Phone numbers are fake by design.** Each branch uses a number in the
   `020 7946 0xxx` block, which Ofcom reserves specifically for fictional use
   in dramas and demos, so none of them can ring a real phone.

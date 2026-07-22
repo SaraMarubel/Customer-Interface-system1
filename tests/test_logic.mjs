@@ -11,6 +11,8 @@ import {
   PREP_MINUTES,
   STORES,
   projectToMapFraction,
+  MAP_BOUNDS,
+  THAMES_WAYPOINTS,
   isValidCardNumber,
   luhnCheck,
   isValidExpiry,
@@ -83,6 +85,36 @@ test("projectToMapFraction places higher latitude further up (smaller y)", () =>
   const north = projectToMapFraction(51.65, -0.1);
   const south = projectToMapFraction(51.35, -0.1);
   assert.ok(north.yFraction < south.yFraction);
+});
+
+test("MAP_BOUNDS contains every store, with room to spare", () => {
+  for (const store of STORES) {
+    assert.ok(store.lat > MAP_BOUNDS.minLat && store.lat < MAP_BOUNDS.maxLat, `${store.name} lat out of bounds`);
+    assert.ok(store.lon > MAP_BOUNDS.minLon && store.lon < MAP_BOUNDS.maxLon, `${store.name} lon out of bounds`);
+  }
+});
+
+test("stores are spread across most of the map, not clustered in a corner", () => {
+  const fractions = STORES.map((s) => projectToMapFraction(s.lat, s.lon));
+  const xSpread = Math.max(...fractions.map((f) => f.xFraction)) - Math.min(...fractions.map((f) => f.xFraction));
+  const ySpread = Math.max(...fractions.map((f) => f.yFraction)) - Math.min(...fractions.map((f) => f.yFraction));
+  assert.ok(xSpread > 0.5, `expected x spread > 0.5, got ${xSpread}`);
+  assert.ok(ySpread > 0.5, `expected y spread > 0.5, got ${ySpread}`);
+});
+
+test("Waterloo and Elephant & Castle sit much closer to the real Thames than Colindale or Brent Cross", () => {
+  const distanceToRiverKm = (store) =>
+    Math.min(...THAMES_WAYPOINTS.map((w) => haversineKm(store.lat, store.lon, w.lat, w.lon)));
+
+  const waterloo = STORES.find((s) => s.name === "Waterloo");
+  const elephantAndCastle = STORES.find((s) => s.name === "Elephant & Castle");
+  const colindale = STORES.find((s) => s.name === "Colindale");
+  const brentCross = STORES.find((s) => s.name === "Brent Cross");
+
+  assert.ok(distanceToRiverKm(waterloo) < 1, "Waterloo should be under 1km from the Thames");
+  assert.ok(distanceToRiverKm(elephantAndCastle) < 2.5, "Elephant & Castle should be under 2.5km from the Thames");
+  assert.ok(distanceToRiverKm(colindale) > 8, "Colindale should be well over 8km from the Thames");
+  assert.ok(distanceToRiverKm(brentCross) > 8, "Brent Cross should be well over 8km from the Thames");
 });
 
 // --- Geocoding & distance -------------------------------------------------

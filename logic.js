@@ -69,13 +69,75 @@ export function validateLondonPostcode(raw) {
 // box. The same postcode always maps to the same point.
 export const LONDON_BOUNDS = { minLat: 51.28, maxLat: 51.7, minLon: -0.51, maxLon: 0.2 };
 
-// Projects a lat/lon into a 0-1 x/y fraction of LONDON_BOUNDS, for placing a
-// pin on the stylised map. Not a real map projection — just a simple linear
-// scale, which is fine for a small bounding box like Greater London.
+// Real approximate coordinates of Thames bridges/crossings, west to east,
+// used to draw the river on the branch-picker map in roughly its true shape
+// and position (the southward bulge around Putney/Wandsworth/Battersea, then
+// north through Vauxhall/Westminster/Waterloo, peaking near Blackfriars).
+export const THAMES_WAYPOINTS = [
+  { name: "Kew Bridge", lat: 51.4886, lon: -0.29 },
+  { name: "Hammersmith Bridge", lat: 51.4854, lon: -0.2277 },
+  { name: "Putney Bridge", lat: 51.4682, lon: -0.2103 },
+  { name: "Battersea Bridge", lat: 51.4784, lon: -0.171 },
+  { name: "Vauxhall Bridge", lat: 51.4861, lon: -0.1246 },
+  { name: "Westminster Bridge", lat: 51.501, lon: -0.1211 },
+  { name: "Waterloo Bridge", lat: 51.5075, lon: -0.1147 },
+  { name: "Blackfriars Bridge", lat: 51.5106, lon: -0.1035 },
+  { name: "London Bridge", lat: 51.5079, lon: -0.0877 },
+  { name: "Tower Bridge", lat: 51.5055, lon: -0.0754 },
+];
+
+// The map viewBox is 400x300 (a 4:3 aspect ratio) — matched here so a real
+// straight-line distance looks the same length whichever direction it runs.
+const MAP_VIEWBOX_WIDTH = 400;
+const MAP_VIEWBOX_HEIGHT = 300;
+const KM_PER_DEGREE_LAT = 111;
+
+// The map "zooms in" to just the area actually covered by our branches (plus
+// some padding), rather than all of Greater London — otherwise the branches
+// end up clustered in a small corner of the picture. Aspect-corrected using
+// each degree of longitude's real length at London's latitude, so the map
+// isn't stretched and pins/river line up with their true relative positions.
+function computeMapBounds(points, paddingFraction = 0.35) {
+  const lats = points.map((p) => p.lat);
+  const lons = points.map((p) => p.lon);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLon = Math.min(...lons);
+  const maxLon = Math.max(...lons);
+
+  const centerLat = (minLat + maxLat) / 2;
+  const centerLon = (minLon + maxLon) / 2;
+  const kmPerDegreeLon = KM_PER_DEGREE_LAT * Math.cos((centerLat * Math.PI) / 180);
+
+  let latRangeKm = (maxLat - minLat) * KM_PER_DEGREE_LAT * (1 + paddingFraction);
+  let lonRangeKm = (maxLon - minLon) * kmPerDegreeLon * (1 + paddingFraction);
+
+  const targetAspect = MAP_VIEWBOX_WIDTH / MAP_VIEWBOX_HEIGHT;
+  if (lonRangeKm / latRangeKm < targetAspect) {
+    lonRangeKm = latRangeKm * targetAspect;
+  } else {
+    latRangeKm = lonRangeKm / targetAspect;
+  }
+
+  const latRangeDeg = latRangeKm / KM_PER_DEGREE_LAT;
+  const lonRangeDeg = lonRangeKm / kmPerDegreeLon;
+
+  return {
+    minLat: centerLat - latRangeDeg / 2,
+    maxLat: centerLat + latRangeDeg / 2,
+    minLon: centerLon - lonRangeDeg / 2,
+    maxLon: centerLon + lonRangeDeg / 2,
+  };
+}
+
+export const MAP_BOUNDS = computeMapBounds(STORES);
+
+// Projects a lat/lon into a 0-1 x/y fraction of MAP_BOUNDS, for placing a pin
+// (or the river) on the stylised map.
 export function projectToMapFraction(lat, lon) {
   return {
-    xFraction: (lon - LONDON_BOUNDS.minLon) / (LONDON_BOUNDS.maxLon - LONDON_BOUNDS.minLon),
-    yFraction: (LONDON_BOUNDS.maxLat - lat) / (LONDON_BOUNDS.maxLat - LONDON_BOUNDS.minLat),
+    xFraction: (lon - MAP_BOUNDS.minLon) / (MAP_BOUNDS.maxLon - MAP_BOUNDS.minLon),
+    yFraction: (MAP_BOUNDS.maxLat - lat) / (MAP_BOUNDS.maxLat - MAP_BOUNDS.minLat),
   };
 }
 

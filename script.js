@@ -9,6 +9,7 @@ import {
   estimateDeliveryMinutes,
   assignDriver,
   projectToMapFraction,
+  THAMES_WAYPOINTS,
   PREP_MINUTES,
 } from "./logic.js";
 
@@ -53,16 +54,43 @@ const branchDetail = document.getElementById("branch-detail");
 const branchDetailName = document.getElementById("branch-detail-name");
 const branchSupportNumber = document.getElementById("branch-support-number");
 
-// A stylised, illustrated-poster-style map of Greater London: a dense street
-// texture, a few tinted "neighbourhood" zones, a couple of parks, a handful
-// of bold trunk roads, and a wide river ribbon for the Thames. None of this
-// is geographically precise — it's original decorative artwork evoking a
-// classic flat-colour tourist map, not a real map tile or API.
-const RIVER_PATH =
-  "M 0 185 C 60 170, 90 205, 140 190 C 190 175, 230 165, 260 185 " +
-  "C 300 205, 340 215, 400 195 L 400 233 " +
-  "C 340 253, 300 243, 260 223 C 230 203, 190 213, 140 228 " +
-  "C 90 243, 60 208, 0 223 Z";
+// A stylised, illustrated-poster-style map: a dense street texture, a few
+// tinted "neighbourhood" zones, a couple of parks, and a handful of bold
+// trunk roads are original decorative artwork (not geographically precise).
+// The river, however, is plotted from THAMES_WAYPOINTS' real coordinates
+// via the same projection used for the branch pins, so it appears in its
+// true position and shape relative to the branches.
+
+// Builds a smooth SVG path through a series of points (quadratic curves
+// through successive midpoints), avoiding sharp corners between waypoints.
+function smoothPathThrough(points) {
+  if (points.length < 2) return "";
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 1; i < points.length - 1; i++) {
+    const midX = (points[i].x + points[i + 1].x) / 2;
+    const midY = (points[i].y + points[i + 1].y) / 2;
+    d += ` Q ${points[i].x} ${points[i].y} ${midX} ${midY}`;
+  }
+  const last = points[points.length - 1];
+  d += ` Q ${last.x} ${last.y} ${last.x} ${last.y}`;
+  return d;
+}
+
+const RIVER_HALF_WIDTH = 11;
+
+function buildRiverRibbonPath() {
+  const centerline = THAMES_WAYPOINTS.map(({ lat, lon }) => {
+    const { xFraction, yFraction } = projectToMapFraction(lat, lon);
+    return { x: xFraction * 400, y: yFraction * 300 };
+  });
+  const topEdge = centerline.map((p) => ({ x: p.x, y: p.y - RIVER_HALF_WIDTH }));
+  const bottomEdge = centerline.map((p) => ({ x: p.x, y: p.y + RIVER_HALF_WIDTH })).reverse();
+  return `${smoothPathThrough(topEdge)} L ${bottomEdge[0].x} ${bottomEdge[0].y} ${smoothPathThrough(
+    bottomEdge
+  ).replace(/^M[^Q]+/, "")} Z`;
+}
+
+const RIVER_PATH = buildRiverRibbonPath();
 
 const TRUNK_ROADS = [
   { d: "M -10 40 L 410 90", color: "yellow" },
