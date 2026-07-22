@@ -1,10 +1,10 @@
 # Marubel Pizza's — Customer Ordering Interface
 
-A small, dependency-free web app simulating a pizza ordering flow for a
-fictional London pizzeria chain, **Marubel Pizza's**. Pick a branch off a
-map, pick a pizza, customize it, enter delivery details, "pay" with a fake
-card, and get an order confirmation with an assigned driver and estimated
-delivery time.
+A small, dependency-free web app simulating a full pizza ordering flow for a
+fictional London pizzeria chain, **Marubel Pizza's**. Find your nearest
+branch, choose pickup or delivery, build any pizza on the menu with your own
+toppings, add drinks, review an itemised receipt, "pay" with a fake card,
+and get an order confirmation.
 
 [![CI](https://github.com/SaraMarubel/Customer-interface-system1/actions/workflows/ci.yml/badge.svg)](https://github.com/SaraMarubel/Customer-interface-system1/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -12,32 +12,62 @@ delivery time.
 ## What it does
 
 1. **Welcome** — a landing screen introducing Marubel Pizza's.
-2. **Choose a branch** — an original, illustrated-poster-style map of Greater
-   London (flat colours, a textured street grid, tinted neighbourhoods, park
-   blobs, bold trunk roads, and a river ribbon) with a pin for each of the 7
-   branches. Hover or focus a pin to see its branch name in a tooltip, or
-   click a pin or a branch name to select it, then either **Place an order**
-   (the big, primary action — ordering is the point of the site) or
-   **Contact support**, which reveals that branch's phone number. Branches
-   are named after, and placed at, the station each sits next to: Elephant
-   & Castle, Colindale, Kentish Town, Waterloo, Brent Cross, Camden Town,
-   Moorgate.
-3. **Choose a pizza** — Margherita, Hawaiian, Pepperoni, Vegetarian, Chicken,
-   or a **Custom** build (sauce yes/no, Low-fat or Mozzarella cheese, and any
-   combination of toppings).
-4. **Enter your details** — name, address, and a postcode, which is validated
-   against the standard UK postcode format *and* checked that it falls in a
-   London postcode area (`E`, `EC`, `N`, `NW`, `SE`, `SW`, `W`, `WC`).
-5. **"Pay"** — a card form that is clearly labeled as fake. No payment is
+2. **Choose a branch** — type a postcode into the "find your nearest branch"
+   box to auto-select the closest one, or pick one yourself from an original,
+   illustrated-poster-style map of Greater London (flat colours, a textured
+   street grid, tinted neighbourhoods, park blobs, bold trunk roads, and a
+   river ribbon) with a pin for each of the 7 branches, or from the plain
+   list underneath. Once a branch is selected, choose **Pickup** or
+   **Delivery** (the two big, primary actions) or **Contact support**, which
+   reveals that branch's phone number. Branches are named after, and placed
+   at, the station each sits next to: Elephant & Castle, Colindale, Kentish
+   Town, Waterloo, Brent Cross, Camden Town, Moorgate.
+3. **Choose your pizza(s)** — Margherita, Hawaiian, Pepperoni, Vegetarian,
+   Chicken, or a **Custom** build (sauce yes/no, choice of cheese). Every
+   pizza, preset or custom, shows a one-line description of what's on it and
+   lets you uncheck any included ingredient or add extra toppings
+   (+£1.99 each), in Small/Medium/Large sizes with their own prices. Set a
+   quantity and add it to your order — then pick another pizza and repeat to
+   order more than one type in the same order.
+4. **Add drinks (optional)** — Water, Sprite, or Coca-Cola, £2 each, with the
+   same quantity-and-add mechanic as pizzas.
+5. **Enter your details** — always your name; if you chose delivery, also an
+   address and postcode, validated against the standard UK postcode format
+   *and* checked that it falls in a London postcode area (`E`, `EC`, `N`,
+   `NW`, `SE`, `SW`, `W`, `WC`). Pickup orders skip the address entirely —
+   just give your name at the counter.
+6. **Time estimate** — pickup orders are told it'll be ready in the standard
+   ~15 minute prep time; delivery orders get an estimate combining that prep
+   time with real travel time (via the haversine distance) from the branch to
+   the delivery postcode.
+7. **Receipt** — an itemised, scrollable, till-receipt-styled summary of
+   every pizza and drink, the subtotal, the £2.99 delivery fee (or "FREE"
+   for pickup), and the total, with a "Continue to pay" button.
+8. **"Pay"** — a card form that is clearly labeled as fake. No payment is
    ever processed and no details are transmitted or stored anywhere. Real
    format-checking code exists for this (see
    [Payment validation](#payment-validation-currently-disabled) below) but is
    currently switched off so the fields accept anything — handy while
    testing the order flow.
-6. **Get an order confirmation** — assigns a random delivery driver (Bob,
-   Kevin, Andrew, Maria, or Charlotte) and estimates a delivery time from a
-   ~15 minute prep time plus travel time (via the haversine distance) from
-   the branch you picked in step 2 to your delivery postcode.
+9. **Confirmation** — for delivery, a random driver (Bob, Kevin, Andrew,
+   Maria, or Charlotte) plus the delivery estimate; for pickup, a reminder of
+   the branch, ready time, and the name to give at the counter. Either way,
+   the total paid is shown again.
+
+## Menu & pricing
+
+| Item | Small | Medium | Large |
+|---|---|---|---|
+| Margherita / Hawaiian / Pepperoni / Vegetarian / Chicken | £7.00 | £12.00 | £18.00 |
+| Custom | £3.00 | £8.00 | £14.00 |
+
+- Extra toppings (on any pizza, preset or custom): **+£1.99 each**
+- Drinks (Water, Sprite, Coca-Cola): **£2.00 each**
+- Delivery fee: **£2.99** (pickup is free)
+
+All prices live in one place, [`logic.js`](logic.js)'s `getPizzaBasePrice()` /
+`calculatePizzaPrice()` / `EXTRA_TOPPING_PRICE` / `DRINK_PRICE` /
+`DELIVERY_FEE`, and are covered by `tests/test_logic.mjs`.
 
 ## Important: what's real and what's simulated
 
@@ -137,10 +167,10 @@ stay verified even while dormant.
 ## Project structure
 
 ```
-index.html    # page structure — the 7-step order wizard
+index.html    # page structure — the 9-step order wizard
 style.css      # styling
-logic.js        # pure logic: validation, geocoding, distance, delivery estimate
-script.js        # DOM wiring — imports logic.js, drives the wizard
+logic.js        # pure logic: menu/pricing, validation, geocoding, distance, delivery estimate
+script.js        # DOM wiring — imports logic.js, drives the wizard and the pizza/drink cart
 tests/
 └── test_logic.mjs   # plain-Node tests for logic.js (no dependencies)
 ```
@@ -174,11 +204,11 @@ node tests/test_logic.mjs
 ## Extending it further
 
 This follows a simple, repeatable pattern — add a case to the relevant list
-in `logic.js` (e.g. another pizza, another store, another driver), or add a
-new pure function alongside the existing ones and a matching test in
-`tests/test_logic.mjs`. Ideas: real geocoding via a free API, order pricing,
-an order history "database" (e.g. via `localStorage` or IndexedDB), multiple
-custom pizzas per order.
+in `logic.js` (e.g. another pizza, another store, another driver, another
+drink), or add a new pure function alongside the existing ones and a
+matching test in `tests/test_logic.mjs`. Ideas: real geocoding via a free
+API, an order history "database" (e.g. via `localStorage` or IndexedDB),
+discount codes, scheduled/future orders instead of "as soon as possible."
 
 ## License
 

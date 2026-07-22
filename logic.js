@@ -21,9 +21,75 @@ export const DRIVERS = ["Bob", "Kevin", "Andrew", "Maria", "Charlotte"];
 export const PREP_MINUTES = 15;
 const AVERAGE_DELIVERY_SPEED_KMH = 20; // rough city moped speed
 
-export const PIZZA_MENU = ["Margherita", "Hawaiian", "Pepperoni", "Vegetarian", "Chicken", "Custom"];
+// Each preset pizza lists its own included ingredients (shown as removable
+// in the UI, though removing one doesn't change the price — same as most
+// real pizzerias). "Custom" has no included ingredients: every topping on
+// it is an extra. All prices are in GBP.
+export const PIZZAS = [
+  {
+    id: "margherita",
+    name: "Margherita",
+    description: "A classic with tomato sauce and melted mozzarella.",
+    baseToppings: ["Tomato Sauce", "Mozzarella"],
+  },
+  {
+    id: "hawaiian",
+    name: "Hawaiian",
+    description: "Tomato sauce and mozzarella topped with ham and pineapple.",
+    baseToppings: ["Tomato Sauce", "Mozzarella", "Ham", "Pineapple"],
+  },
+  {
+    id: "pepperoni",
+    name: "Pepperoni",
+    description: "Tomato sauce and mozzarella loaded with pepperoni.",
+    baseToppings: ["Tomato Sauce", "Mozzarella", "Pepperoni"],
+  },
+  {
+    id: "vegetarian",
+    name: "Vegetarian",
+    description: "Tomato sauce and mozzarella with peppers, onion, and mushroom.",
+    baseToppings: ["Tomato Sauce", "Mozzarella", "Peppers", "Onion", "Mushroom"],
+  },
+  {
+    id: "chicken",
+    name: "Chicken",
+    description: "Tomato sauce and mozzarella topped with grilled chicken.",
+    baseToppings: ["Tomato Sauce", "Mozzarella", "Chicken"],
+  },
+  {
+    id: "custom",
+    name: "Custom",
+    description: "Build your own from scratch: choose your sauce, cheese, and any toppings.",
+    baseToppings: [],
+  },
+];
+
 export const CHEESE_OPTIONS = ["Low-fat", "Mozzarella"];
-export const TOPPING_OPTIONS = ["Peppers", "Pineapple", "Pepperoni", "Chicken", "Onion", "Mushroom"];
+export const TOPPING_OPTIONS = ["Pepperoni", "Chicken", "Ham", "Pineapple", "Peppers", "Onion", "Mushroom", "Extra Cheese"];
+export const PIZZA_SIZES = ["Small", "Medium", "Large"];
+export const DRINKS = ["Water", "Sprite", "Coca-Cola"];
+
+export const EXTRA_TOPPING_PRICE = 1.99;
+export const DRINK_PRICE = 2.0;
+export const DELIVERY_FEE = 2.99;
+
+const PRESET_SIZE_PRICES = { Small: 7, Medium: 12, Large: 18 };
+const CUSTOM_SIZE_PRICES = { Small: 3, Medium: 8, Large: 14 };
+
+export function getPizzaBasePrice(pizzaId, size) {
+  const prices = pizzaId === "custom" ? CUSTOM_SIZE_PRICES : PRESET_SIZE_PRICES;
+  const price = prices[size];
+  if (price === undefined) throw new Error(`Unknown pizza size: ${size}`);
+  return price;
+}
+
+export function calculatePizzaPrice(pizzaId, size, extraToppingsCount) {
+  return getPizzaBasePrice(pizzaId, size) + extraToppingsCount * EXTRA_TOPPING_PRICE;
+}
+
+export function formatGBP(amount) {
+  return `£${amount.toFixed(2)}`;
+}
 
 // --- Postcode validation ---------------------------------------------------
 //
@@ -248,6 +314,20 @@ export function haversineKm(lat1, lon1, lat2, lon2) {
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return EARTH_RADIUS_KM * c;
+}
+
+// Finds the closest branch to a postcode (via fakeGeocode), for the "find my
+// nearest branch" box above the map.
+export function nearestStore(postcode) {
+  const location = fakeGeocode(postcode);
+  let closest = null;
+  for (const store of STORES) {
+    const distanceKm = haversineKm(location.lat, location.lon, store.lat, store.lon);
+    if (!closest || distanceKm < closest.distanceKm) {
+      closest = { store, distanceKm };
+    }
+  }
+  return closest;
 }
 
 export function estimateDeliveryMinutes(distanceKm) {

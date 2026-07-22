@@ -17,10 +17,12 @@
       <li data-step="1">Welcome</li>
       <li data-step="2">Branch</li>
       <li data-step="3">Pizza</li>
-      <li data-step="4">Customize</li>
+      <li data-step="4">Drinks</li>
       <li data-step="5">Your details</li>
-      <li data-step="6">Payment</li>
-      <li data-step="7">Confirmation</li>
+      <li data-step="6">Estimate</li>
+      <li data-step="7">Receipt</li>
+      <li data-step="8">Payment</li>
+      <li data-step="9">Confirmation</li>
     </ol>
 
     <!-- Step 1: welcome -->
@@ -35,6 +37,17 @@
     <!-- Step 2: branch selection -->
     <section class="step" id="step-2" data-step="2" hidden>
       <h2>Choose a branch</h2>
+
+      <div class="postcode-finder">
+        <label>
+          Find your nearest branch
+          <input type="text" id="finder-postcode" placeholder="e.g. SE1 6NP" />
+        </label>
+        <button type="button" id="finder-button">Find</button>
+      </div>
+      <p class="field-error" id="finder-error" hidden></p>
+      <p class="finder-result" id="finder-result" hidden></p>
+
       <p class="hint">Each of our 7 London branches sits right next to the station it's named after.</p>
       <div class="map-container">
         <svg id="branch-map" viewBox="0 0 400 300" role="img" aria-label="Stylised map of Greater London with a pin for each Marubel Pizza's branch"></svg>
@@ -44,7 +57,10 @@
       <div class="branch-detail" id="branch-detail" hidden>
         <h3 id="branch-detail-name"></h3>
         <div class="step-actions step-actions-center">
-          <button type="button" id="branch-order-button" class="primary-cta">Place an order</button>
+          <button type="button" id="branch-pickup-button" class="primary-cta">Pickup</button>
+          <button type="button" id="branch-delivery-button" class="primary-cta">Delivery</button>
+        </div>
+        <div class="step-actions step-actions-center">
           <button type="button" class="secondary" id="branch-support-button">Contact support</button>
         </div>
         <p class="support-number" id="branch-support-number" hidden></p>
@@ -55,41 +71,23 @@
     <section class="step" id="step-3" data-step="3" hidden>
       <h2>Choose your pizza</h2>
       <div class="pizza-grid" id="pizza-grid"></div>
+      <div class="item-config" id="pizza-config" hidden></div>
+      <div class="cart-summary" id="pizza-cart-summary"></div>
       <div class="step-actions">
         <button type="button" class="secondary" id="back-to-branch">Back</button>
-        <button type="button" id="to-step-4" disabled>Next</button>
+        <button type="button" id="to-step-4" disabled>Continue to drinks</button>
       </div>
     </section>
 
-    <!-- Step 4: customize (only shown for Custom pizza) -->
+    <!-- Step 4: drinks -->
     <section class="step" id="step-4" data-step="4" hidden>
-      <h2>Customize your pizza</h2>
-
-      <fieldset>
-        <legend>Sauce</legend>
-        <label class="radio-option">
-          <input type="radio" name="sauce" value="yes" checked />
-          Yes, tomato sauce please
-        </label>
-        <label class="radio-option">
-          <input type="radio" name="sauce" value="no" />
-          No sauce
-        </label>
-      </fieldset>
-
-      <fieldset>
-        <legend>Cheese</legend>
-        <div id="cheese-options"></div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Toppings (choose any)</legend>
-        <div id="topping-options"></div>
-      </fieldset>
-
+      <h2>Add a drink?</h2>
+      <div class="pizza-grid" id="drink-grid"></div>
+      <div class="item-config" id="drink-config" hidden></div>
+      <div class="cart-summary" id="drink-cart-summary"></div>
       <div class="step-actions">
-        <button type="button" class="secondary" id="back-to-step-3">Back</button>
-        <button type="button" id="to-step-5">Next</button>
+        <button type="button" class="secondary" id="back-to-pizza">Back</button>
+        <button type="button" id="to-step-5">Continue</button>
       </div>
     </section>
 
@@ -101,24 +99,50 @@
           Full name
           <input type="text" id="customer-name" required />
         </label>
-        <label>
-          Delivery address
-          <input type="text" id="customer-address" placeholder="Flat 2, 10 Example Street" required />
-        </label>
-        <label>
-          Postcode <span class="hint">(must be a London postcode)</span>
-          <input type="text" id="customer-postcode" placeholder="e.g. SE1 6NP" required />
-        </label>
+        <div id="delivery-fields">
+          <label>
+            Delivery address
+            <input type="text" id="customer-address" placeholder="Flat 2, 10 Example Street" />
+          </label>
+          <label>
+            Postcode <span class="hint">(must be a London postcode)</span>
+            <input type="text" id="customer-postcode" placeholder="e.g. SE1 6NP" />
+          </label>
+        </div>
+        <p class="hint" id="pickup-note" hidden>
+          No address needed — just give your name at the counter when you collect it.
+        </p>
         <p class="field-error" id="details-error" hidden></p>
         <div class="step-actions">
-          <button type="button" class="secondary" id="back-to-pizza">Back</button>
+          <button type="button" class="secondary" id="back-to-drinks">Back</button>
           <button type="submit" id="to-step-6">Next</button>
         </div>
       </form>
     </section>
 
-    <!-- Step 6: payment (fake) -->
+    <!-- Step 6: time estimate -->
     <section class="step" id="step-6" data-step="6" hidden>
+      <h2 id="estimate-heading"></h2>
+      <p id="estimate-detail"></p>
+      <div class="step-actions">
+        <button type="button" class="secondary" id="back-to-details">Back</button>
+        <button type="button" id="to-step-7">Continue to receipt</button>
+      </div>
+    </section>
+
+    <!-- Step 7: receipt -->
+    <section class="step" id="step-7" data-step="7" hidden>
+      <h2>Your receipt</h2>
+      <div class="receipt-wrapper">
+        <div class="receipt" id="receipt-content"></div>
+      </div>
+      <div class="step-actions step-actions-center">
+        <button type="button" id="to-step-8">Continue to pay</button>
+      </div>
+    </section>
+
+    <!-- Step 8: payment (fake) -->
+    <section class="step" id="step-8" data-step="8" hidden>
       <h2>Payment</h2>
       <p class="fake-notice">
         ⚠️ This is a fake payment form for demonstration purposes only. No real
@@ -139,14 +163,14 @@
           <input type="text" id="card-cvv" placeholder="123" inputmode="numeric" />
         </label>
         <div class="step-actions">
-          <button type="button" class="secondary" id="back-to-details">Back</button>
+          <button type="button" class="secondary" id="back-to-receipt">Back</button>
           <button type="submit" id="place-order">Place order</button>
         </div>
       </form>
     </section>
 
-    <!-- Step 7: confirmation -->
-    <section class="step" id="step-7" data-step="7" hidden>
+    <!-- Step 9: confirmation -->
+    <section class="step" id="step-9" data-step="9" hidden>
       <h2>🎉 Order confirmed!</h2>
       <div class="confirmation" id="confirmation-content"></div>
       <div class="step-actions">

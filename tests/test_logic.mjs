@@ -18,6 +18,13 @@ import {
   luhnCheck,
   isValidExpiry,
   isValidCvv,
+  PIZZAS,
+  TOPPING_OPTIONS,
+  getPizzaBasePrice,
+  calculatePizzaPrice,
+  formatGBP,
+  nearestStore,
+  EXTRA_TOPPING_PRICE,
 } from "../logic.js";
 
 let passed = 0;
@@ -201,6 +208,58 @@ test("isValidCvv accepts exactly 3 digits", () => {
   assert.equal(isValidCvv("123"), true);
   assert.equal(isValidCvv("12"), false);
   assert.equal(isValidCvv("1234"), false);
+});
+
+// --- Pizza pricing -----------------------------------------------------
+test("preset pizza base prices match the menu (Small 7, Medium 12, Large 18)", () => {
+  assert.equal(getPizzaBasePrice("margherita", "Small"), 7);
+  assert.equal(getPizzaBasePrice("margherita", "Medium"), 12);
+  assert.equal(getPizzaBasePrice("margherita", "Large"), 18);
+});
+
+test("custom pizza starts cheaper than presets at every size", () => {
+  assert.equal(getPizzaBasePrice("custom", "Small"), 3);
+  assert.ok(getPizzaBasePrice("custom", "Medium") < getPizzaBasePrice("margherita", "Medium"));
+  assert.ok(getPizzaBasePrice("custom", "Large") < getPizzaBasePrice("margherita", "Large"));
+});
+
+test("getPizzaBasePrice rejects an unknown size", () => {
+  assert.throws(() => getPizzaBasePrice("margherita", "Extra-Large"));
+});
+
+test("calculatePizzaPrice adds extra topping cost on top of the base price", () => {
+  const base = getPizzaBasePrice("pepperoni", "Medium");
+  assert.equal(calculatePizzaPrice("pepperoni", "Medium", 0), base);
+  assert.equal(calculatePizzaPrice("pepperoni", "Medium", 2), base + 2 * EXTRA_TOPPING_PRICE);
+});
+
+test("every preset pizza's base toppings come from the shared topping list (except sauce/cheese)", () => {
+  const nonToppingIngredients = ["Tomato Sauce", "Mozzarella"];
+  for (const pizza of PIZZAS) {
+    if (pizza.id === "custom") continue;
+    for (const ingredient of pizza.baseToppings) {
+      const isKnown = nonToppingIngredients.includes(ingredient) || TOPPING_OPTIONS.includes(ingredient);
+      assert.ok(isKnown, `${pizza.name} has unrecognised ingredient "${ingredient}"`);
+    }
+  }
+});
+
+test("formatGBP formats as pounds with 2 decimal places", () => {
+  assert.equal(formatGBP(7), "£7.00");
+  assert.equal(formatGBP(9.9), "£9.90");
+  assert.equal(formatGBP(12.345), "£12.35");
+});
+
+// --- Nearest store (postcode finder) ----------------------------------------
+test("nearestStore finds Elephant & Castle for a nearby SE1 postcode", () => {
+  const result = nearestStore("SE1 6DX");
+  assert.equal(result.store.name, "Elephant & Castle");
+  assert.ok(result.distanceKm < 3, `expected < 3km, got ${result.distanceKm}`);
+});
+
+test("nearestStore finds Colindale for a nearby NW9 postcode", () => {
+  const result = nearestStore("NW9 5AB");
+  assert.equal(result.store.name, "Colindale");
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

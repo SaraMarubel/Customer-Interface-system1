@@ -133,6 +133,31 @@ body {
   justify-content: center;
 }
 
+/* --- Postcode finder --- */
+
+.postcode-finder {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.postcode-finder label {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.postcode-finder button {
+  height: 2.65rem;
+}
+
+.finder-result {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin: 0 0 1rem;
+}
+
 /* --- Branch map --- */
 
 .map-container {
@@ -321,6 +346,174 @@ body {
   font-size: 1.8rem;
   display: block;
   margin-bottom: 0.4rem;
+}
+
+.pizza-card small {
+  color: var(--muted);
+}
+
+/* --- Pizza/drink configuration panel --- */
+
+.item-config {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.item-description {
+  margin-top: 0;
+  color: var(--muted);
+}
+
+.quantity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.quantity-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.quantity-stepper button {
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0;
+  line-height: 1;
+  font-size: 1.2rem;
+}
+
+.quantity-stepper span {
+  min-width: 1.5rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+.item-total {
+  text-align: right;
+  margin-bottom: 1rem;
+  font-size: 1.05rem;
+}
+
+.item-total strong {
+  color: var(--primary);
+}
+
+/* --- Cart summary --- */
+
+.cart-summary {
+  margin-bottom: 1.5rem;
+}
+
+.cart-summary h3 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.cart-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.92rem;
+}
+
+.remove-line {
+  background: none;
+  border: none;
+  color: var(--error);
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+  text-decoration: underline;
+}
+
+.remove-line:hover {
+  background: none;
+  color: var(--primary-dark);
+}
+
+/* --- Receipt --- */
+
+.receipt-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.receipt {
+  width: 100%;
+  max-width: 320px;
+  max-height: 420px;
+  overflow-y: auto;
+  background: #fffdf8;
+  color: #2b1c14;
+  font-family: "Courier New", Courier, monospace;
+  padding: 1.5rem 1.25rem;
+  box-shadow: var(--shadow);
+  border-radius: 4px;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 8px,
+    rgba(43, 28, 20, 0.02) 8px,
+    rgba(43, 28, 20, 0.02) 16px
+  );
+}
+
+.receipt-header {
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+.receipt-store {
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+}
+
+.receipt-type {
+  margin-top: 0.35rem;
+  font-weight: 700;
+}
+
+.receipt-divider {
+  border-top: 1px dashed #2b1c1466;
+  margin: 0.6rem 0;
+}
+
+.receipt-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  padding: 0.15rem 0;
+}
+
+.receipt-subline {
+  font-size: 0.78rem;
+  color: #6b5a4d;
+  padding-left: 0.75rem;
+  margin-bottom: 0.2rem;
+}
+
+.receipt-total {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.receipt-footer {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.85rem;
 }
 
 fieldset {

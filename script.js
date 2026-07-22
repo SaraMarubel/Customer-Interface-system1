@@ -1,9 +1,17 @@
 import {
   STORES,
-  PIZZA_MENU,
+  PIZZAS,
   CHEESE_OPTIONS,
   TOPPING_OPTIONS,
+  PIZZA_SIZES,
+  DRINKS,
+  EXTRA_TOPPING_PRICE,
+  DRINK_PRICE,
+  DELIVERY_FEE,
+  calculatePizzaPrice,
+  formatGBP,
   validateLondonPostcode,
+  nearestStore,
   fakeGeocode,
   haversineKm,
   estimateDeliveryMinutes,
@@ -14,20 +22,29 @@ import {
 } from "./logic.js";
 
 const PIZZA_EMOJI = {
-  Margherita: "🍅",
-  Hawaiian: "🍍",
-  Pepperoni: "🍕",
-  Vegetarian: "🥦",
-  Chicken: "🍗",
-  Custom: "🛠️",
+  margherita: "🍅",
+  hawaiian: "🍍",
+  pepperoni: "🍕",
+  vegetarian: "🥦",
+  chicken: "🍗",
+  custom: "🛠️",
+};
+
+const DRINK_EMOJI = {
+  Water: "💧",
+  Sprite: "🍋",
+  "Coca-Cola": "🥫",
 };
 
 const order = {
   store: null,
-  pizza: null,
-  sauce: "yes",
-  cheese: null,
-  toppings: [],
+  fulfillment: null, // "pickup" | "delivery"
+  cart: { pizzas: [], drinks: [] },
+  name: "",
+  address: "",
+  postcode: "",
+  deliveryMinutes: null,
+  total: 0,
 };
 
 const stepIndicator = document.getElementById("step-indicator");
@@ -42,6 +59,12 @@ function showStep(stepNumber) {
     li.classList.toggle("active", n === stepNumber);
     li.classList.toggle("done", n < stepNumber);
   });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
 }
 
 // --- Step 1: welcome -----------------------------------------------------
@@ -61,8 +84,6 @@ const branchSupportNumber = document.getElementById("branch-support-number");
 // via the same projection used for the branch pins, so it appears in its
 // true position and shape relative to the branches.
 
-// Builds a smooth SVG path through a series of points (quadratic curves
-// through successive midpoints), avoiding sharp corners between waypoints.
 function smoothPathThrough(points) {
   if (points.length < 2) return "";
   let d = `M ${points[0].x} ${points[0].y}`;
@@ -178,7 +199,38 @@ function selectBranch(store) {
   branchDetail.hidden = false;
 }
 
-document.getElementById("branch-order-button").addEventListener("click", () => {
+// "Find my nearest branch" postcode box.
+const finderInput = document.getElementById("finder-postcode");
+const finderButton = document.getElementById("finder-button");
+const finderError = document.getElementById("finder-error");
+const finderResult = document.getElementById("finder-result");
+
+finderButton.addEventListener("click", () => {
+  finderError.hidden = true;
+  finderResult.hidden = true;
+
+  let normalized;
+  try {
+    normalized = validateLondonPostcode(finderInput.value);
+  } catch (err) {
+    finderError.textContent = err.message;
+    finderError.hidden = false;
+    return;
+  }
+
+  const { store, distanceKm } = nearestStore(normalized);
+  selectBranch(store);
+  finderResult.textContent = `Your nearest branch is ${store.name} (~${distanceKm.toFixed(1)}km away) — selected below.`;
+  finderResult.hidden = false;
+});
+
+document.getElementById("branch-pickup-button").addEventListener("click", () => {
+  order.fulfillment = "pickup";
+  showStep(3);
+});
+
+document.getElementById("branch-delivery-button").addEventListener("click", () => {
+  order.fulfillment = "delivery";
   showStep(3);
 });
 
@@ -187,108 +239,358 @@ document.getElementById("branch-support-button").addEventListener("click", () =>
   branchSupportNumber.hidden = false;
 });
 
-// --- Step 3: pizza selection -------------------------------------------
+// --- Step 3: pizza selection & cart -----------------------------------------
 const pizzaGrid = document.getElementById("pizza-grid");
+const pizzaConfigContainer = document.getElementById("pizza-config");
+const pizzaCartSummary = document.getElementById("pizza-cart-summary");
 const toStep4Button = document.getElementById("to-step-4");
+let pizzaConfigState = null;
 
-PIZZA_MENU.forEach((pizza) => {
+PIZZAS.forEach((pizza) => {
   const card = document.createElement("div");
   card.className = "pizza-card";
-  card.dataset.pizza = pizza;
-  card.innerHTML = `<span class="emoji">${PIZZA_EMOJI[pizza] ?? "🍕"}</span>${pizza}`;
-  card.addEventListener("click", () => {
-    order.pizza = pizza;
-    Array.from(pizzaGrid.children).forEach((c) => c.classList.toggle("selected", c === card));
-    toStep4Button.disabled = false;
-  });
+  card.dataset.pizzaId = pizza.id;
+  card.innerHTML = `<span class="emoji">${PIZZA_EMOJI[pizza.id] ?? "🍕"}</span>${pizza.name}`;
+  card.addEventListener("click", () => selectPizza(pizza));
   pizzaGrid.appendChild(card);
 });
 
-document.getElementById("back-to-branch").addEventListener("click", () => showStep(2));
+function selectPizza(pizza) {
+  pizzaConfigState = {
+    pizza,
+    size: "Small",
+    removedBase: new Set(),
+    extraToppings: new Set(),
+    quantity: 1,
+    sauce: "yes",
+    cheese: CHEESE_OPTIONS[0],
+  };
+  Array.from(pizzaGrid.children).forEach((c) => c.classList.toggle("selected", c.dataset.pizzaId === pizza.id));
+  renderPizzaConfig();
+}
 
-toStep4Button.addEventListener("click", () => {
-  if (order.pizza === "Custom") {
-    showStep(4);
-  } else {
-    showStep(5);
+function computePizzaUnitPrice() {
+  return calculatePizzaPrice(pizzaConfigState.pizza.id, pizzaConfigState.size, pizzaConfigState.extraToppings.size);
+}
+
+function renderPizzaConfig() {
+  const { pizza, size, removedBase, extraToppings, quantity, sauce, cheese } = pizzaConfigState;
+  const availableExtras = TOPPING_OPTIONS.filter((t) => !pizza.baseToppings.includes(t));
+  const unitPrice = computePizzaUnitPrice();
+  const lineTotal = unitPrice * quantity;
+
+  pizzaConfigContainer.hidden = false;
+  pizzaConfigContainer.innerHTML = `
+    <p class="item-description">${pizza.description}</p>
+    ${
+      pizza.id === "custom"
+        ? `
+      <fieldset>
+        <legend>Sauce</legend>
+        <label class="radio-option"><input type="radio" name="cfg-sauce" value="yes" ${
+          sauce === "yes" ? "checked" : ""
+        }> Yes, tomato sauce please</label>
+        <label class="radio-option"><input type="radio" name="cfg-sauce" value="no" ${
+          sauce === "no" ? "checked" : ""
+        }> No sauce</label>
+      </fieldset>
+      <fieldset>
+        <legend>Cheese</legend>
+        ${CHEESE_OPTIONS.map(
+          (c) => `<label class="radio-option"><input type="radio" name="cfg-cheese" value="${c}" ${
+            cheese === c ? "checked" : ""
+          }> ${c}</label>`
+        ).join("")}
+      </fieldset>
+    `
+        : ""
+    }
+    ${
+      pizza.baseToppings.length
+        ? `
+      <fieldset>
+        <legend>Included (uncheck to remove)</legend>
+        ${pizza.baseToppings
+          .map(
+            (t) =>
+              `<label class="checkbox-option"><input type="checkbox" data-base-topping="${t}" ${
+                removedBase.has(t) ? "" : "checked"
+              }> ${t}</label>`
+          )
+          .join("")}
+      </fieldset>
+    `
+        : ""
+    }
+    <fieldset>
+      <legend>Add extra toppings (+${formatGBP(EXTRA_TOPPING_PRICE)} each)</legend>
+      ${availableExtras
+        .map(
+          (t) =>
+            `<label class="checkbox-option"><input type="checkbox" data-extra-topping="${t}" ${
+              extraToppings.has(t) ? "checked" : ""
+            }> ${t}</label>`
+        )
+        .join("")}
+    </fieldset>
+    <fieldset>
+      <legend>Size</legend>
+      ${PIZZA_SIZES.map(
+        (s) =>
+          `<label class="radio-option"><input type="radio" name="cfg-size" value="${s}" ${
+            size === s ? "checked" : ""
+          }> ${s} — ${formatGBP(calculatePizzaPrice(pizza.id, s, extraToppings.size))}</label>`
+      ).join("")}
+    </fieldset>
+    <div class="quantity-row">
+      <span>Quantity</span>
+      <div class="quantity-stepper">
+        <button type="button" id="cfg-qty-minus" aria-label="Decrease quantity">−</button>
+        <span id="cfg-qty-value">${quantity}</span>
+        <button type="button" id="cfg-qty-plus" aria-label="Increase quantity">+</button>
+      </div>
+    </div>
+    <div class="item-total">Line total: <strong>${formatGBP(lineTotal)}</strong></div>
+    <div class="step-actions step-actions-center">
+      <button type="button" id="add-pizza-to-order">Add to order — ${formatGBP(lineTotal)}</button>
+    </div>
+  `;
+
+  if (pizza.id === "custom") {
+    pizzaConfigContainer.querySelectorAll('input[name="cfg-sauce"]').forEach((r) =>
+      r.addEventListener("change", (e) => {
+        pizzaConfigState.sauce = e.target.value;
+        renderPizzaConfig();
+      })
+    );
+    pizzaConfigContainer.querySelectorAll('input[name="cfg-cheese"]').forEach((r) =>
+      r.addEventListener("change", (e) => {
+        pizzaConfigState.cheese = e.target.value;
+        renderPizzaConfig();
+      })
+    );
   }
-});
-
-// --- Step 4: customize (only for Custom pizza) --------------------------
-const cheeseOptionsContainer = document.getElementById("cheese-options");
-const toppingOptionsContainer = document.getElementById("topping-options");
-
-CHEESE_OPTIONS.forEach((cheese) => {
-  const label = document.createElement("label");
-  label.className = "radio-option";
-  label.innerHTML = `<input type="radio" name="cheese" value="${cheese}"> ${cheese}`;
-  label.querySelector("input").addEventListener("change", () => {
-    order.cheese = cheese;
-  });
-  cheeseOptionsContainer.appendChild(label);
-});
-
-TOPPING_OPTIONS.forEach((topping) => {
-  const label = document.createElement("label");
-  label.className = "checkbox-option";
-  label.innerHTML = `<input type="checkbox" name="topping" value="${topping}"> ${topping}`;
-  label.querySelector("input").addEventListener("change", (e) => {
-    if (e.target.checked) {
-      order.toppings.push(topping);
-    } else {
-      order.toppings = order.toppings.filter((t) => t !== topping);
+  pizzaConfigContainer.querySelectorAll("input[data-base-topping]").forEach((cb) =>
+    cb.addEventListener("change", (e) => {
+      const name = e.target.dataset.baseTopping;
+      if (e.target.checked) removedBase.delete(name);
+      else removedBase.add(name);
+      renderPizzaConfig();
+    })
+  );
+  pizzaConfigContainer.querySelectorAll("input[data-extra-topping]").forEach((cb) =>
+    cb.addEventListener("change", (e) => {
+      const name = e.target.dataset.extraTopping;
+      if (e.target.checked) extraToppings.add(name);
+      else extraToppings.delete(name);
+      renderPizzaConfig();
+    })
+  );
+  pizzaConfigContainer.querySelectorAll('input[name="cfg-size"]').forEach((r) =>
+    r.addEventListener("change", (e) => {
+      pizzaConfigState.size = e.target.value;
+      renderPizzaConfig();
+    })
+  );
+  document.getElementById("cfg-qty-minus").addEventListener("click", () => {
+    if (pizzaConfigState.quantity > 1) {
+      pizzaConfigState.quantity--;
+      renderPizzaConfig();
     }
   });
-  toppingOptionsContainer.appendChild(label);
-});
-
-document.querySelectorAll('input[name="sauce"]').forEach((input) => {
-  input.addEventListener("change", (e) => {
-    order.sauce = e.target.value;
+  document.getElementById("cfg-qty-plus").addEventListener("click", () => {
+    pizzaConfigState.quantity++;
+    renderPizzaConfig();
   });
-});
+  document.getElementById("add-pizza-to-order").addEventListener("click", addPizzaToCart);
+}
 
-document.getElementById("back-to-step-3").addEventListener("click", () => showStep(3));
+function addPizzaToCart() {
+  const { pizza, size, removedBase, extraToppings, quantity, sauce, cheese } = pizzaConfigState;
+  const unitPrice = computePizzaUnitPrice();
+  order.cart.pizzas.push({
+    pizzaId: pizza.id,
+    name: pizza.name,
+    size,
+    removedBase: Array.from(removedBase),
+    extraToppings: Array.from(extraToppings),
+    sauce: pizza.id === "custom" ? sauce : undefined,
+    cheese: pizza.id === "custom" ? cheese : undefined,
+    quantity,
+    unitPrice,
+    lineTotal: unitPrice * quantity,
+  });
+  pizzaConfigState = null;
+  pizzaConfigContainer.hidden = true;
+  pizzaConfigContainer.innerHTML = "";
+  Array.from(pizzaGrid.children).forEach((c) => c.classList.remove("selected"));
+  renderPizzaCartSummary();
+}
 
-document.getElementById("to-step-5").addEventListener("click", () => {
-  if (!order.cheese) {
-    order.cheese = CHEESE_OPTIONS[0];
-    cheeseOptionsContainer.querySelector("input").checked = true;
+function renderPizzaCartSummary() {
+  toStep4Button.disabled = order.cart.pizzas.length === 0;
+  if (!order.cart.pizzas.length) {
+    pizzaCartSummary.innerHTML = "";
+    return;
   }
-  showStep(5);
+  pizzaCartSummary.innerHTML = `
+    <h3>Your order so far</h3>
+    ${order.cart.pizzas
+      .map(
+        (item, i) => `
+      <div class="cart-line">
+        <span>${item.quantity} × ${item.name} (${item.size})${
+          item.extraToppings.length ? ` + ${item.extraToppings.join(", ")}` : ""
+        }</span>
+        <span>${formatGBP(item.lineTotal)} <button type="button" class="remove-line" data-index="${i}">Remove</button></span>
+      </div>
+    `
+      )
+      .join("")}
+  `;
+  pizzaCartSummary.querySelectorAll(".remove-line").forEach((btn) =>
+    btn.addEventListener("click", (e) => {
+      order.cart.pizzas.splice(Number(e.target.dataset.index), 1);
+      renderPizzaCartSummary();
+    })
+  );
+}
+
+document.getElementById("back-to-branch").addEventListener("click", () => showStep(2));
+toStep4Button.addEventListener("click", () => showStep(4));
+
+// --- Step 4: drinks & cart ---------------------------------------------
+const drinkGrid = document.getElementById("drink-grid");
+const drinkConfigContainer = document.getElementById("drink-config");
+const drinkCartSummary = document.getElementById("drink-cart-summary");
+let drinkConfigState = null;
+
+DRINKS.forEach((drink) => {
+  const card = document.createElement("div");
+  card.className = "pizza-card";
+  card.dataset.drink = drink;
+  card.innerHTML = `<span class="emoji">${DRINK_EMOJI[drink] ?? "🥤"}</span>${drink}<br /><small>${formatGBP(
+    DRINK_PRICE
+  )}</small>`;
+  card.addEventListener("click", () => selectDrink(drink));
+  drinkGrid.appendChild(card);
 });
+
+function selectDrink(drink) {
+  drinkConfigState = { drink, quantity: 1 };
+  Array.from(drinkGrid.children).forEach((c) => c.classList.toggle("selected", c.dataset.drink === drink));
+  renderDrinkConfig();
+}
+
+function renderDrinkConfig() {
+  const { drink, quantity } = drinkConfigState;
+  const lineTotal = DRINK_PRICE * quantity;
+  drinkConfigContainer.hidden = false;
+  drinkConfigContainer.innerHTML = `
+    <div class="quantity-row">
+      <span>Quantity of ${drink}</span>
+      <div class="quantity-stepper">
+        <button type="button" id="drink-qty-minus" aria-label="Decrease quantity">−</button>
+        <span>${quantity}</span>
+        <button type="button" id="drink-qty-plus" aria-label="Increase quantity">+</button>
+      </div>
+    </div>
+    <div class="item-total">Line total: <strong>${formatGBP(lineTotal)}</strong></div>
+    <div class="step-actions step-actions-center">
+      <button type="button" id="add-drink-to-order">Add to order — ${formatGBP(lineTotal)}</button>
+    </div>
+  `;
+  document.getElementById("drink-qty-minus").addEventListener("click", () => {
+    if (drinkConfigState.quantity > 1) {
+      drinkConfigState.quantity--;
+      renderDrinkConfig();
+    }
+  });
+  document.getElementById("drink-qty-plus").addEventListener("click", () => {
+    drinkConfigState.quantity++;
+    renderDrinkConfig();
+  });
+  document.getElementById("add-drink-to-order").addEventListener("click", addDrinkToCart);
+}
+
+function addDrinkToCart() {
+  const { drink, quantity } = drinkConfigState;
+  order.cart.drinks.push({ drink, quantity, unitPrice: DRINK_PRICE, lineTotal: DRINK_PRICE * quantity });
+  drinkConfigState = null;
+  drinkConfigContainer.hidden = true;
+  drinkConfigContainer.innerHTML = "";
+  Array.from(drinkGrid.children).forEach((c) => c.classList.remove("selected"));
+  renderDrinkCartSummary();
+}
+
+function renderDrinkCartSummary() {
+  if (!order.cart.drinks.length) {
+    drinkCartSummary.innerHTML = "";
+    return;
+  }
+  drinkCartSummary.innerHTML = `
+    <h3>Your drinks so far</h3>
+    ${order.cart.drinks
+      .map(
+        (item, i) => `
+      <div class="cart-line">
+        <span>${item.quantity} × ${item.drink}</span>
+        <span>${formatGBP(item.lineTotal)} <button type="button" class="remove-line" data-index="${i}">Remove</button></span>
+      </div>
+    `
+      )
+      .join("")}
+  `;
+  drinkCartSummary.querySelectorAll(".remove-line").forEach((btn) =>
+    btn.addEventListener("click", (e) => {
+      order.cart.drinks.splice(Number(e.target.dataset.index), 1);
+      renderDrinkCartSummary();
+    })
+  );
+}
+
+document.getElementById("back-to-pizza").addEventListener("click", () => showStep(3));
 
 // --- Step 5: customer details --------------------------------------------
 const detailsForm = document.getElementById("details-form");
 const detailsError = document.getElementById("details-error");
+const deliveryFields = document.getElementById("delivery-fields");
+const pickupNote = document.getElementById("pickup-note");
 
-document.getElementById("back-to-pizza").addEventListener("click", () => {
-  showStep(order.pizza === "Custom" ? 4 : 3);
+document.getElementById("to-step-5").addEventListener("click", () => {
+  const isDelivery = order.fulfillment === "delivery";
+  deliveryFields.hidden = !isDelivery;
+  pickupNote.hidden = isDelivery;
+  showStep(5);
 });
+
+document.getElementById("back-to-drinks").addEventListener("click", () => showStep(4));
 
 detailsForm.addEventListener("submit", (e) => {
   e.preventDefault();
   detailsError.hidden = true;
 
   const name = document.getElementById("customer-name").value.trim();
-  const address = document.getElementById("customer-address").value.trim();
-  const postcodeRaw = document.getElementById("customer-postcode").value.trim();
-
   if (!name) {
     return showDetailsError("Please enter your name.");
   }
-  if (!address) {
-    return showDetailsError("Please enter your delivery address.");
-  }
-
-  try {
-    order.postcode = validateLondonPostcode(postcodeRaw);
-  } catch (err) {
-    return showDetailsError(err.message);
-  }
-
   order.name = name;
-  order.address = address;
+
+  if (order.fulfillment === "delivery") {
+    const address = document.getElementById("customer-address").value.trim();
+    const postcodeRaw = document.getElementById("customer-postcode").value.trim();
+    if (!address) {
+      return showDetailsError("Please enter your delivery address.");
+    }
+    try {
+      order.postcode = validateLondonPostcode(postcodeRaw);
+    } catch (err) {
+      return showDetailsError(err.message);
+    }
+    order.address = address;
+  }
+
+  renderEstimateStep();
   showStep(6);
 });
 
@@ -297,49 +599,117 @@ function showDetailsError(message) {
   detailsError.hidden = false;
 }
 
-// --- Step 6: payment (fake) ------------------------------------------------
-const paymentForm = document.getElementById("payment-form");
+// --- Step 6: time estimate --------------------------------------------------
+function renderEstimateStep() {
+  const heading = document.getElementById("estimate-heading");
+  const detail = document.getElementById("estimate-detail");
+  if (order.fulfillment === "pickup") {
+    heading.textContent = "We're getting your pizza ready!";
+    detail.textContent = `Ready for pickup in approximately ${PREP_MINUTES} minutes at Marubel Pizza's, ${order.store.name}. Just give the name "${order.name}" at the counter.`;
+  } else {
+    const location = fakeGeocode(order.postcode);
+    const distanceKm = haversineKm(location.lat, location.lon, order.store.lat, order.store.lon);
+    order.deliveryMinutes = estimateDeliveryMinutes(distanceKm);
+    heading.textContent = "Your order is on its way!";
+    detail.textContent = `Estimated delivery time: approximately ${order.deliveryMinutes} minutes to ${order.address}, ${order.postcode}.`;
+  }
+}
 
 document.getElementById("back-to-details").addEventListener("click", () => showStep(5));
+document.getElementById("to-step-7").addEventListener("click", () => {
+  renderReceipt();
+  showStep(7);
+});
+
+// --- Step 7: receipt ---------------------------------------------------
+function renderReceipt() {
+  const pizzaSubtotal = order.cart.pizzas.reduce((sum, i) => sum + i.lineTotal, 0);
+  const drinksSubtotal = order.cart.drinks.reduce((sum, i) => sum + i.lineTotal, 0);
+  const subtotal = pizzaSubtotal + drinksSubtotal;
+  const deliveryFee = order.fulfillment === "delivery" ? DELIVERY_FEE : 0;
+  order.total = subtotal + deliveryFee;
+
+  const pizzaLines = order.cart.pizzas
+    .map(
+      (item) => `
+    <div class="receipt-line">
+      <span>${item.quantity}x ${item.name} (${item.size})</span>
+      <span>${formatGBP(item.lineTotal)}</span>
+    </div>
+    ${item.extraToppings.length ? `<div class="receipt-subline">+ ${item.extraToppings.join(", ")}</div>` : ""}
+    ${item.removedBase.length ? `<div class="receipt-subline">no ${item.removedBase.join(", ")}</div>` : ""}
+  `
+    )
+    .join("");
+
+  const drinkLines = order.cart.drinks
+    .map(
+      (item) => `
+    <div class="receipt-line">
+      <span>${item.quantity}x ${item.drink}</span>
+      <span>${formatGBP(item.lineTotal)}</span>
+    </div>
+  `
+    )
+    .join("");
+
+  document.getElementById("receipt-content").innerHTML = `
+    <div class="receipt-header">
+      <div class="receipt-store">MARUBEL PIZZA'S</div>
+      <div>${order.store.name} branch</div>
+      <div class="receipt-type">${order.fulfillment === "delivery" ? "DELIVERY ORDER" : "PICKUP ORDER"}</div>
+    </div>
+    <div class="receipt-divider"></div>
+    ${pizzaLines}
+    ${drinkLines}
+    <div class="receipt-divider"></div>
+    <div class="receipt-line"><span>Subtotal</span><span>${formatGBP(subtotal)}</span></div>
+    <div class="receipt-line"><span>${order.fulfillment === "delivery" ? "Delivery fee" : "Pickup"}</span><span>${
+      order.fulfillment === "delivery" ? formatGBP(DELIVERY_FEE) : "FREE"
+    }</span></div>
+    <div class="receipt-divider"></div>
+    <div class="receipt-line receipt-total"><span>TOTAL</span><span>${formatGBP(order.total)}</span></div>
+    <div class="receipt-footer">Thank you for choosing<br />Marubel Pizza's! 🍕</div>
+  `;
+}
+
+document.getElementById("to-step-8").addEventListener("click", () => showStep(8));
+
+// --- Step 8: payment (fake) ------------------------------------------------
+const paymentForm = document.getElementById("payment-form");
+
+document.getElementById("back-to-receipt").addEventListener("click", () => showStep(7));
 
 paymentForm.addEventListener("submit", (e) => {
   e.preventDefault();
   completeOrder();
 });
 
-// --- Step 7: confirmation --------------------------------------------------
+// --- Step 9: confirmation --------------------------------------------------
 const confirmationContent = document.getElementById("confirmation-content");
 
 function completeOrder() {
-  const customerLocation = fakeGeocode(order.postcode);
-  const distanceKm = haversineKm(customerLocation.lat, customerLocation.lon, order.store.lat, order.store.lon);
-  const totalMinutes = estimateDeliveryMinutes(distanceKm);
-  const driver = assignDriver();
-
-  const pizzaDescription =
-    order.pizza === "Custom"
-      ? `Custom pizza (${order.sauce === "yes" ? "with" : "no"} sauce, ${order.cheese} cheese${
-          order.toppings.length ? `, topped with ${order.toppings.join(", ")}` : ", no extra toppings"
-        })`
-      : order.pizza;
-
-  confirmationContent.innerHTML = `
-    <p>Thanks, ${escapeHtml(order.name)} — your order is on its way!</p>
-    <p><strong>Order:</strong> ${escapeHtml(pizzaDescription)}</p>
-    <p><strong>Delivering to:</strong> ${escapeHtml(order.address)}, ${escapeHtml(order.postcode)}</p>
-    <p><strong>Ordering from:</strong> Marubel Pizza's, ${order.store.name}</p>
-    <p><strong>Delivery driver:</strong> ${driver}</p>
-    <p><strong>Prep time:</strong> roughly ${PREP_MINUTES} minutes</p>
-    <p><strong>Estimated delivery time:</strong> <span class="highlight">~${totalMinutes} minutes</span></p>
-    <p>Have a great day! 🍕</p>
-  `;
-  showStep(7);
-}
-
-function escapeHtml(str) {
-  const div = document.createElement("div");
-  div.textContent = str;
-  return div.innerHTML;
+  if (order.fulfillment === "pickup") {
+    confirmationContent.innerHTML = `
+      <p>Thanks, ${escapeHtml(order.name)} — your order is confirmed!</p>
+      <p><strong>Pickup from:</strong> Marubel Pizza's, ${order.store.name}</p>
+      <p><strong>Ready in:</strong> approximately ${PREP_MINUTES} minutes</p>
+      <p><strong>Total paid:</strong> <span class="highlight">${formatGBP(order.total)}</span></p>
+      <p>Give the name "${escapeHtml(order.name)}" at the counter. Have a great day! 🍕</p>
+    `;
+  } else {
+    const driver = assignDriver();
+    confirmationContent.innerHTML = `
+      <p>Thanks, ${escapeHtml(order.name)} — your order is on its way!</p>
+      <p><strong>Delivering to:</strong> ${escapeHtml(order.address)}, ${escapeHtml(order.postcode)}</p>
+      <p><strong>Ordering from:</strong> Marubel Pizza's, ${order.store.name}</p>
+      <p><strong>Delivery driver:</strong> ${driver}</p>
+      <p><strong>Estimated delivery time:</strong> <span class="highlight">~${order.deliveryMinutes} minutes</span></p>
+      <p><strong>Total paid:</strong> <span class="highlight">${formatGBP(order.total)}</span></p>
+      <p>Have a great day! 🍕</p>
+    `;
+  }
+  showStep(9);
 }
 
 // --- Start over --------------------------------------------------------
