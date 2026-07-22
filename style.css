@@ -9,6 +9,14 @@
   --accent: #2e7d4f;
   --error: #b3261e;
   --shadow: 0 2px 8px rgba(43, 28, 20, 0.08);
+  --map-land: #eee7da;
+  --map-grid: rgba(43, 28, 20, 0.06);
+  --zone-a: rgba(46, 125, 79, 0.1);
+  --zone-b: rgba(192, 57, 43, 0.08);
+  --map-park: rgba(46, 125, 79, 0.28);
+  --map-river: #6fa8c7;
+  --map-road-yellow: #f4b93f;
+  --map-road-orange: #e8703a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,6 +31,14 @@
     --accent: #59c085;
     --error: #ff8a80;
     --shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --map-land: #2b241d;
+    --map-grid: rgba(241, 231, 221, 0.06);
+    --zone-a: rgba(89, 192, 133, 0.12);
+    --zone-b: rgba(232, 96, 77, 0.1);
+    --map-park: rgba(89, 192, 133, 0.3);
+    --map-river: #3d6b85;
+    --map-road-yellow: #d9a233;
+    --map-road-orange: #c25a2e;
   }
 }
 
@@ -134,48 +150,94 @@ body {
 }
 
 .map-background {
-  fill: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  fill: var(--map-land);
+}
+
+.map-grid-line {
+  fill: none;
+  stroke: var(--map-grid);
+  stroke-width: 1;
+}
+
+.map-zone {
+  opacity: 0.9;
+}
+
+.map-park {
+  fill: var(--map-park);
+}
+
+.map-road {
+  fill: none;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+
+.map-road-yellow {
+  stroke: var(--map-road-yellow);
+  stroke-width: 7;
+}
+
+.map-road-orange {
+  stroke: var(--map-road-orange);
+  stroke-width: 5;
 }
 
 .map-river {
-  fill: none;
-  stroke: color-mix(in srgb, var(--primary) 25%, var(--accent));
-  stroke-width: 6;
-  stroke-linecap: round;
-  opacity: 0.5;
+  fill: var(--map-river);
+  opacity: 0.75;
 }
 
 .map-pin {
   cursor: pointer;
 }
 
-.map-pin circle {
-  fill: var(--primary);
-  stroke: var(--surface);
+.map-pin-ring {
+  fill: var(--surface);
+  stroke: var(--primary);
   stroke-width: 2;
   transition: r 0.1s ease;
 }
 
-.map-pin:hover circle,
-.map-pin:focus circle {
-  r: 11;
+.map-pin-dot {
+  fill: var(--primary);
+  pointer-events: none;
 }
 
-.map-pin.selected circle {
+.map-pin:hover .map-pin-ring,
+.map-pin:focus .map-pin-ring {
+  r: 12;
+}
+
+.map-pin.selected .map-pin-ring {
+  stroke: var(--accent);
+}
+
+.map-pin.selected .map-pin-dot {
   fill: var(--accent);
 }
 
-.map-pin text {
+.map-pin-label {
+  opacity: 0;
+  transition: opacity 0.1s ease;
+  pointer-events: none;
+}
+
+.map-pin-label rect {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.map-pin-label text {
   font-size: 11px;
   fill: var(--text);
   font-weight: 600;
-  opacity: 0;
-  transition: opacity 0.1s ease;
 }
 
-.map-pin:hover text,
-.map-pin:focus text,
-.map-pin.selected text {
+.map-pin:hover .map-pin-label,
+.map-pin:focus .map-pin-label,
+.map-pin.selected .map-pin-label {
   opacity: 1;
 }
 

@@ -12,13 +12,16 @@ delivery time.
 ## What it does
 
 1. **Welcome** — a landing screen introducing Marubel Pizza's.
-2. **Choose a branch** — a stylised map of Greater London with a pin for each
-   of the 7 branches (each named after, and placed at, the station it sits
-   next to: Elephant & Castle, Colindale, Kentish Town, Waterloo, Brent
-   Cross, Camden Town, Moorgate). Click a pin or a branch name, then either
-   **Place an order** (the big, primary action — ordering is the point of
-   the site) or **Contact support**, which reveals that branch's phone
-   number.
+2. **Choose a branch** — an original, illustrated-poster-style map of Greater
+   London (flat colours, a textured street grid, tinted neighbourhoods, park
+   blobs, bold trunk roads, and a river ribbon) with a pin for each of the 7
+   branches. Hover or focus a pin to see its branch name in a tooltip, or
+   click a pin or a branch name to select it, then either **Place an order**
+   (the big, primary action — ordering is the point of the site) or
+   **Contact support**, which reveals that branch's phone number. Branches
+   are named after, and placed at, the station each sits next to: Elephant
+   & Castle, Colindale, Kentish Town, Waterloo, Brent Cross, Camden Town,
+   Moorgate.
 3. **Choose a pizza** — Margherita, Hawaiian, Pepperoni, Vegetarian, Chicken,
    or a **Custom** build (sauce yes/no, Low-fat or Mozzarella cheese, and any
    combination of toppings).
@@ -40,8 +43,10 @@ delivery time.
 
 - **Store locations** are real approximate coordinates for those 7 stations,
   and the branch-picker map places each pin by projecting those coordinates
-  onto Greater London's bounding box (`projectToMapFraction()`) — not a real
-  map tile, just a simple linear projection with a decorative river line.
+  onto Greater London's bounding box (`projectToMapFraction()`). The map
+  itself is original decorative artwork drawn in `script.js` (streets, zones,
+  parks, river) in a flat-colour illustrated-map style — not a real map tile
+  or map API, since this is an offline, dependency-free static site.
 - **Phone numbers are fake by design.** Each branch uses a number in the
   `020 7946 0xxx` block, which Ofcom reserves specifically for fictional use
   in dramas and demos, so none of them can ring a real phone.

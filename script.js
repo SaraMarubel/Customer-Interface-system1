@@ -53,12 +53,52 @@ const branchDetail = document.getElementById("branch-detail");
 const branchDetailName = document.getElementById("branch-detail-name");
 const branchSupportNumber = document.getElementById("branch-support-number");
 
-// A soft, stylised river Thames line — not a real map, just visual flavour.
+// A stylised, illustrated-poster-style map of Greater London: a dense street
+// texture, a few tinted "neighbourhood" zones, a couple of parks, a handful
+// of bold trunk roads, and a wide river ribbon for the Thames. None of this
+// is geographically precise — it's original decorative artwork evoking a
+// classic flat-colour tourist map, not a real map tile or API.
 const RIVER_PATH =
-  "M 0 190 C 60 180, 90 210, 140 195 S 220 165, 260 185 S 340 210, 400 195";
+  "M 0 185 C 60 170, 90 205, 140 190 C 190 175, 230 165, 260 185 " +
+  "C 300 205, 340 215, 400 195 L 400 233 " +
+  "C 340 253, 300 243, 260 223 C 230 203, 190 213, 140 228 " +
+  "C 90 243, 60 208, 0 223 Z";
+
+const TRUNK_ROADS = [
+  { d: "M -10 40 L 410 90", color: "yellow" },
+  { d: "M -10 120 L 410 60", color: "orange" },
+  { d: "M 40 -10 L 90 310", color: "orange" },
+  { d: "M 230 -10 L 180 310", color: "yellow" },
+  { d: "M -10 250 L 410 260", color: "yellow" },
+  { d: "M 300 -10 L 340 150 L 300 310", color: "orange" },
+];
+
+const NEIGHBOURHOOD_ZONES = [
+  { cx: 90, cy: 70, rx: 70, ry: 55, color: "var(--zone-a)" },
+  { cx: 260, cy: 55, rx: 90, ry: 50, color: "var(--zone-b)" },
+  { cx: 340, cy: 150, rx: 60, ry: 70, color: "var(--zone-a)" },
+  { cx: 120, cy: 150, rx: 65, ry: 55, color: "var(--zone-b)" },
+  { cx: 220, cy: 250, rx: 80, ry: 45, color: "var(--zone-a)" },
+];
+
+const PARKS = [
+  { cx: 60, cy: 200, rx: 28, ry: 20 },
+  { cx: 350, cy: 250, rx: 24, ry: 18 },
+];
 
 branchMap.innerHTML = `
+  <defs>
+    <pattern id="street-grid" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M 16 0 L 0 0 0 16" class="map-grid-line" />
+    </pattern>
+  </defs>
   <rect x="0" y="0" width="400" height="300" class="map-background" rx="16" />
+  <rect x="0" y="0" width="400" height="300" fill="url(#street-grid)" rx="16" />
+  ${NEIGHBOURHOOD_ZONES.map(
+    (z) => `<ellipse cx="${z.cx}" cy="${z.cy}" rx="${z.rx}" ry="${z.ry}" fill="${z.color}" class="map-zone" />`
+  ).join("")}
+  ${PARKS.map((p) => `<ellipse cx="${p.cx}" cy="${p.cy}" rx="${p.rx}" ry="${p.ry}" class="map-park" />`).join("")}
+  ${TRUNK_ROADS.map((r) => `<path d="${r.d}" class="map-road map-road-${r.color}" />`).join("")}
   <path d="${RIVER_PATH}" class="map-river" />
 `;
 
@@ -67,6 +107,7 @@ STORES.forEach((store) => {
   const { xFraction, yFraction } = projectToMapFraction(store.lat, store.lon);
   const x = xFraction * 400;
   const y = yFraction * 300;
+  const labelWidth = store.name.length * 6.7 + 20;
 
   const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
   group.setAttribute("class", "map-pin");
@@ -74,8 +115,12 @@ STORES.forEach((store) => {
   group.setAttribute("role", "button");
   group.setAttribute("aria-label", `Select ${store.name} branch`);
   group.innerHTML = `
-    <circle cx="${x}" cy="${y}" r="9" />
-    <text x="${x}" y="${y + 22}" text-anchor="middle">${store.name}</text>
+    <circle cx="${x}" cy="${y}" r="10" class="map-pin-ring" />
+    <circle cx="${x}" cy="${y}" r="5.5" class="map-pin-dot" />
+    <g class="map-pin-label">
+      <rect x="${x - labelWidth / 2}" y="${y - 38}" width="${labelWidth}" height="22" rx="6" />
+      <text x="${x}" y="${y - 22.5}" text-anchor="middle">${store.name}</text>
+    </g>
   `;
   group.addEventListener("click", () => selectBranch(store));
   group.addEventListener("keydown", (e) => {
